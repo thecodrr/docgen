@@ -28,6 +28,7 @@ fn walk_dir<P: AsRef<Path>>(dir: P, config: &Config) -> Option<Directory> {
     let current_dir: &Path = dir.as_ref();
 
     for entry in WalkDir::new(&current_dir)
+        .follow_links(true)
         .max_depth(1)
         .into_iter()
         .filter_map(|e| e.ok())

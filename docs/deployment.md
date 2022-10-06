@@ -2,19 +2,18 @@
 title: Deployment
 ---
 
-Deployment
-==========
+# Deployment
 
-Doctave builds a static site bundle into the `site` directory which is fully self contained. You can
-take the output of `doctave build --release` and deploy it in any way you see fit.
+Docgen builds a static site bundle into the `site` directory which is fully self contained. You can
+take the output of `docgen build --release` and deploy it in any way you see fit.
 
 {% info :point_right: Deploying under a custom path %}
 
-By default Doctave assumes the deployed page is accessible under the root url. E.g.
+By default Docgen assumes the deployed page is accessible under the root url. E.g.
 `wwww.example.com`.
 
 If you want to deploy under a subdirectory, such as `www.example.com/docs`, you
-have to set the `base_path` in your `doctave.yaml` file. This will make Doctave generate URLs
+have to set the `base_path` in your `docgen.yaml` file. This will make Docgen generate URLs
 relative to e.g `/docs` instead of the plain root url `/`.
 
 Read more [here](/configuration#base_path-5).
@@ -34,16 +33,18 @@ This guide assumes you have:
 ### Disable Jekyll builds
 
 First, you need to tell Github not to use Jekyll to build your site. You do this by including a
-`.nojekyll` file in the root of site. 
+`.nojekyll` file in the root of site.
 
-In Doctave, you do this by adding the file under `docs/_include`.
+In Docgen, you do this by adding the file under `docs/_include`.
 
 On Mac/Linux:
+
 ```
 $ touch docs/_include/.nojekyll
 ```
 
 On Windows:
+
 ```
 $ echo.> docs\_include\.nojekyll
 ```
@@ -64,7 +65,6 @@ Luckily, there is a handy command line tool, [gh-pages](https://www.npmjs.com/pa
 that takes care of all of that for you. All you need to do, is run a single command, and your site
 will be published.
 
-
 {% warning :warning: Note about gh-pages %}
 At the time of writing, `gh-pages@3.1.0` does not work for projects without a package.json
 file. This is why this guide recommends using `3.0.0`. Read more in [this
@@ -80,7 +80,7 @@ npm install -g gh-pages@3.0.0
 Next, build your site in release mode. This strips away some development-only dependencies:
 
 ```
-$ doctave build --release
+$ docgen build --release
 ```
 
 Your site should now be ready in the `site` directory.

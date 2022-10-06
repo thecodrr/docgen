@@ -2,8 +2,7 @@
 title: Markdown syntax
 ---
 
-Markdown syntax
-===============
+# Markdown syntax
 
 This document walks you through all the various Markdown features and associated syntaxes.
 
@@ -47,10 +46,10 @@ Both **bold**, _italics_, and ~~strikethrough~~ are supported.
     * Lamb
 ```
 
-* Mary
-* Had
-* A little
-    * Lamb
+- Mary
+- Had
+- A little
+  - Lamb
 
 ### Ordered lists
 
@@ -64,15 +63,15 @@ Both **bold**, _italics_, and ~~strikethrough~~ are supported.
 1. Mary
 2. Had
 3. A little
-    1. Lamb
+   1. Lamb
 
 ## Links
 
 ```
-[Doctave](https://doctave.com)
+[Docgen](https://github.com/thecodrr/docgen)
 ```
 
-[Doctave](https://doctave.com)
+[Docgen](https://github.com/thecodrr/docgen)
 
 ## Images
 
@@ -86,7 +85,7 @@ Both **bold**, _italics_, and ~~strikethrough~~ are supported.
 
 You can use [GitHub style shortcodes](https://emojipedia.org/shortcodes/) for emojis.
 
-This means you can write `:bell:` and Doctave will render is as :bell:. These work particularly well
+This means you can write `:bell:` and Docgen will render is as :bell:. These work particularly well
 with callouts (see below):
 
 {% info :zap:  I want your attention %}
@@ -97,8 +96,8 @@ This is important!
 
 You can bring attention to sections using callouts.
 
-
 ### Basic usage
+
 ```
 {% info This is the title %}
 
@@ -174,24 +173,26 @@ Use `backticks for inline code snippets`.
 ### Block
 
 Either use three backticks
-~~~
+
+````
 ```
 For().your().code()
 ```
-~~~
+````
 
 To achieve:
 
-````
+```
 For().your().code()
-````
+```
 
 Or indent your code with 4 spaces:
-````
+
+```
 
     For().your().code()
 
-````
+```
 
 For the same effect:
 
@@ -199,13 +200,13 @@ For the same effect:
 
 You can specify the language for syntax highlighting using the backticks syntax.
 
-~~~
+````
 ```ruby
 def initialize(table_name_singularised)
     @table = table_name_singularised.to_s.pluralize
 end
 ```
-~~~
+````
 
 ```ruby
 def initialize(table_name_singularised)
@@ -234,7 +235,7 @@ This is content for a columns  | This is **bold**         |
 You can have more rows         | And more columns         |
 ```
 
-This is a heading              | This is another heading  |
--------------------------------|--------------------------|
-This is content for a columns  | This is **bold**         |
-You can have more rows         | And more columns         |
+| This is a heading             | This is another heading |
+| ----------------------------- | ----------------------- |
+| This is content for a columns | This is **bold**        |
+| You can have more rows        | And more columns        |

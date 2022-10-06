@@ -200,7 +200,7 @@ th {
 }
 
 .search,
-.doctave-content {
+.docgen-content {
     max-width: 830px;
     min-width: 380px;
     width: 100%;
@@ -344,7 +344,7 @@ th {
         padding-bottom: 50px;
     }
 
-    .page .container .doctave-content {
+    .page .container .docgen-content {
         padding: 40px;
     }
 
@@ -372,7 +372,7 @@ th {
         overflow: hidden;
     }
 
-    #menu-toggle-switch:checked+.page .container .doctave-content {
+    #menu-toggle-switch:checked+.page .container .docgen-content {
         overflow-x: hidden;
         margin-left: 300px;
     }
@@ -407,7 +407,7 @@ th {
         padding-bottom: 0px;
     }
 
-    .doctave-content,
+    .docgen-content,
     .header,
     .header .search {
         min-width: 100%;
@@ -418,7 +418,7 @@ th {
         padding-right: 10px;
     }
 
-    .page .container .doctave-content {
+    .page .container .docgen-content {
         padding: 20px;
     }
 
@@ -487,7 +487,7 @@ th {
     color: #AFAFAF;
 }
 
-.dark .doctave-content {
+.dark .docgen-content {
     background: #30404D;
 }
 
@@ -593,7 +593,7 @@ th {
 
 /* Main content -------------------------------------------------------- */
 
-.doctave-content {
+.docgen-content {
     z-index: 10;
     padding: 80px;
     background: #FFF;
@@ -601,12 +601,12 @@ th {
     border-radius: 10px 10px 0px 0px;
 }
 
-.doctave-content h1:first-child,
-.doctave-content h2:first-child,
-.doctave-content h3:first-child,
-.doctave-content h4:first-child,
-.doctave-content h5:first-child,
-.doctave-content h6:first-child {
+.docgen-content h1:first-child,
+.docgen-content h2:first-child,
+.docgen-content h3:first-child,
+.docgen-content h4:first-child,
+.docgen-content h5:first-child,
+.docgen-content h6:first-child {
     font-weight: 400;
     margin-top: 0;
 }

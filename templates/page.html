@@ -15,16 +15,16 @@
 
     <link rel="stylesheet" type="text/css" href="{{ base_path }}assets/normalize.css?v={{ timestamp }}"
         media="screen" />
-    <link rel="stylesheet" type="text/css" href="{{ base_path }}assets/doctave-style.css?v={{ timestamp }}"
+    <link rel="stylesheet" type="text/css" href="{{ base_path }}assets/docgen-style.css?v={{ timestamp }}"
         media="screen" />
     <link rel="stylesheet" type="text/css" href="{{ base_path }}assets/katex.css?v={{ timestamp }}" media="screen" />
     <link rel="stylesheet" type="text/css" href="{{ base_path }}assets/prism-ghcolors.css?v={{ timestamp }}"
         media="screen" />
 
     <script>
-        var DOCTAVE_TIMESTAMP = "{{ timestamp }}";
+        var DOCGEN_TIMESTAMP = "{{ timestamp }}";
         var BASE_PATH = "{{ base_path }}";
-        var color = localStorage.getItem('doctave-color')
+        var color = localStorage.getItem('docgen-color')
 
         if (color === 'dark') {
             document.getElementsByTagName('html')[0].classList.remove('light');
@@ -69,7 +69,7 @@
             <div class='sidebar-left'>
                 {{> navigation links=navigation current_page=current_page }}
             </div>
-            <div class='doctave-content'>
+            <div class='docgen-content'>
                 {{{ content }}}
             </div>
             <div class='sidebar-right'>
@@ -96,7 +96,7 @@
                         d="M0,224L60,197.3C120,171,240,117,360,117.3C480,117,600,171,720,186.7C840,203,960,181,1080,186.7C1200,192,1320,224,1380,240L1440,256L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z">
                     </path>
                 </svg>
-                <p>Powered by <a href='https://cli.doctave.com' target='_blank'>Doctave</a></p>
+                <p>Powered by <a href='https://docgen.streetwriters.co' target='_blank'>Docgen</a></p>
             </div>
         </div>
     </div>
@@ -104,7 +104,7 @@
     <script type="text/javascript" src="{{ base_path }}assets/mermaid.js?v={{ timestamp }}"></script>
     <script type="text/javascript" src="{{ base_path }}assets/elasticlunr.js?v={{ timestamp }}"></script>
     <script type="text/javascript" src="{{ base_path }}assets/prism.js?v={{ timestamp }}"></script>
-    <script type="text/javascript" src="{{ base_path }}assets/doctave-app.js?v={{ timestamp }}"></script>
+    <script type="text/javascript" src="{{ base_path }}assets/docgen-app.js?v={{ timestamp }}"></script>
 
     {{#if (eq build_mode "dev") }}
     <script type='text/javascript' src="{{ base_path }}assets/livereload.js?port=35729" async="" defer=""></script>
@@ -112,14 +112,14 @@
     <script>
         // Don't reset scrolling on livereload
         window.addEventListener('scroll', function () {
-            localStorage.setItem('doctave-scrollPosition', window.scrollY);
+            localStorage.setItem('docgen-scrollPosition', window.scrollY);
 
             dragRightMenu();
         }, false);
 
         window.addEventListener('load', function () {
-            if (localStorage.getItem('doctave-scrollPosition') !== null)
-                window.scrollTo(0, localStorage.getItem('doctave-scrollPosition'));
+            if (localStorage.getItem('docgen-scrollPosition') !== null)
+                window.scrollTo(0, localStorage.getItem('docgen-scrollPosition'));
 
             document.getElementById('menu-toggle-switch').addEventListener('change', function (e) {
                 disableScrollifMenuOpen();

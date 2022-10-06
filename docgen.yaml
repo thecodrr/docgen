@@ -1,8 +1,8 @@
 ---
-title: Doctave
+title: Docgen
 colors:
   main: "#6875f5"
-logo: assets/doctave-logo.svg
+logo: assets/docgen-logo.svg
 
 navigation:
   - path: docs/installing.md

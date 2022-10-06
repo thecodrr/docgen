@@ -551,7 +551,7 @@ integration_test!(base_path_with_logo, |area| {
     area.refute_contains(&index, "<a href='/'>");
 });
 
-// See (Issue 18)[https://github.com/Docgen/docgen/issues/18]
+// See (Issue 18)[https://github.com/Doctave/doctave/issues/18]
 integration_test!(issue_18, |area| {
     area.write_file(
         Path::new("docgen.yaml"),

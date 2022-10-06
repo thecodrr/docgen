@@ -2,30 +2,29 @@
 title: Tutorial
 ---
 
-Tutorial
-========
+# Tutorial
 
-If you are new to Doctave, this tutorial will walk you through getting your site built and
+If you are new to Docgen, this tutorial will walk you through getting your site built and
 deployed.
 
 ## Installation
 
-First, make sure that you have installed Doctave locally. Follow the instructions in the
+First, make sure that you have installed Docgen locally. Follow the instructions in the
 [installation guide](/installing).
 
 To verify you have installed everything correctly, run the following:
 
 ```
-$ doctave --version
-Doctave x.y.z
+$ docgen --version
+Docgen x.y.z
 ```
 
 ## Creating a new site
 
-Creating a new documentation site can be done easily with the `doctave init` command:
+Creating a new documentation site can be done easily with the `docgen init` command:
 
 ```
-$ doctave init
+$ docgen init
 ...
 ```
 
@@ -33,23 +32,24 @@ This will create a `docs/` directory in the root of your repository, and some pa
 started with.
 
 If you wish to use a different directory than `docs/`, you can pass the name of that directory as the argument `--docs-dir`:
+
 ```
-$ doctave init --docs-dir some_subdirectory
+$ docgen init --docs-dir some_subdirectory
 ...
 ```
 
-You'll also find a `doctave.yaml` in your project root now. Lets take a look at it.
+You'll also find a `docgen.yaml` in your project root now. Lets take a look at it.
 
 ```
 # On Mac / Linux
-$ cat doctave.yaml
+$ cat docgen.yaml
 ---
 title: "My project"
 
 
 
 # On Windows
-$ type doctave.yaml
+$ type docgen.yaml
 ---
 title: "My project"
 
@@ -58,13 +58,13 @@ title: "My project"
 Currently, you only have the project's name mentioned. This title is shown on the page navigation,
 and used as the HTML page title. You should change that to be the actual name of your project.
 
-Now, you can run `doctave serve` to start the local webserver. _**Note**: When you edit your
+Now, you can run `docgen serve` to start the local webserver. _**Note**: When you edit your
 `docatave.yaml` file, you will have to restart the webserver for the changes to come into effect._
 
 ```
-$ doctave serve
+$ docgen serve
 
-Doctave | Serve
+Docgen | Serve
 Starting development server...
 
 Server running on http://0.0.0.0:4001/
@@ -74,7 +74,7 @@ And finally, go to [http://localhost:4001](http://localhost:4001) to view your s
 
 ## Editing content
 
-While `doctave serve` is running, you can edit the your documentation Markdown files, and you will
+While `docgen serve` is running, you can edit the your documentation Markdown files, and you will
 immediately see your page update. Try it! Open up `docs/README.md` in your favorite text editor,
 and make a change. You should see the browser refresh and show your changes automatically. This way
 you can quickly see what your changes look like.
@@ -82,7 +82,7 @@ you can quickly see what your changes look like.
 If you are not familiar with Markdown syntax, or need a refresher, you can read our [Markdown
 reference](/features/markdown) or check out [this
 guide](https://guides.github.com/features/mastering-markdown/) by GitHub. Note that there are a few
-different flavors of Markdown. Doctave supports all the "basics" Markdown features, as well as a few
+different flavors of Markdown. Docgen supports all the "basics" Markdown features, as well as a few
 "GitHub flavored Markdown" features - namely task lists and tables.
 
 ## Adding pages
@@ -101,9 +101,9 @@ $ touch docs/building.md
 $ echo.> docs\building.md
 ```
 
-By default, Doctave assumes the title of the page is its title, but we may want to change that.
+By default, Docgen assumes the title of the page is its title, but we may want to change that.
 Let's add a _front matter block_ to the page. This is just a quick
-[YAML](https://blog.stackpath.com/yaml/) snippet that gives Doctave some additional information
+[YAML](https://blog.stackpath.com/yaml/) snippet that gives Docgen some additional information
 about the page.
 
 Paste the following into the file you just created:
@@ -121,13 +121,12 @@ title: How to build
 Open up your browser, and you should now see a _"How to build"_ link in the sidebar. And if you
 click it, you will be taken to the page.
 
-
 ## What next?
 
-That's really all there is to know about getting started with Doctave. Here are some resources that
+That's really all there is to know about getting started with Docgen. Here are some resources that
 can help going forward:
 
-* [Deployment guide](/deployment)
-* [Adding Mermaid.js diagrams](/features/mermaid-js)
-* [Customize your look and feel](/features/look-and-feel)
-* [Customize your navigation](/features/custom-navigation)
+- [Deployment guide](/deployment)
+- [Adding Mermaid.js diagrams](/features/mermaid-js)
+- [Customize your look and feel](/features/look-and-feel)
+- [Customize your navigation](/features/custom-navigation)

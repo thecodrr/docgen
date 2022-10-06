@@ -2,17 +2,16 @@
 title: Custom navigation
 ---
 
-Custom navigation
-=================
+# Custom navigation
 
-By default, Doctave will include all your pages in the left-side navigation and sort them in
+By default, Docgen will include all your pages in the left-side navigation and sort them in
 alphanumerical order. But sometimes you will want to customize either the order or the content of
-the navigation. This is why you can set the contents of the navigation in the `doctave.yaml` file.
+the navigation. This is why you can set the contents of the navigation in the `docgen.yaml` file.
 
 This allows you to:
 
-* Decide on the order of the links
-* Decide which links to show
+- Decide on the order of the links
+- Decide which links to show
 
 ## An example
 

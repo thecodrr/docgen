@@ -4,25 +4,24 @@ title: Contributor guide
 
 # Contributor guide
 
-Firstly, **thank you for considering contributing to Doctave**. Open source software would not
+Firstly, **thank you for considering contributing to Docgen**. Open source software would not
 survive without people like yourself, who take time out of their busy schedules to help out. **We
 appreciate you.**
 
-This document will help you get started working with Doctave. It will walk you through how to build,
+This document will help you get started working with Docgen. It will walk you through how to build,
 run tests, and things to keep in mind when contributing.
 
 First, make sure you've cloned the repo,
 
 ```
-git clone git@github.com:Doctave/doctave.git
+git clone git@github.com:Docgen/docgen.git
 ```
 
 and installed the [Rust toolchain](https://www.rust-lang.org/learn/get-started).
 
 ## Building
 
-
-Doctave is a fairly standard Rust project. It uses Cargo, doesn't have any non-rust dependencies, so
+Docgen is a fairly standard Rust project. It uses Cargo, doesn't have any non-rust dependencies, so
 assuming you have Rust installed, you should be able to run `cargo build` and get a working build.
 If not, please open an issue on Github with the error you see.
 
@@ -40,7 +39,7 @@ $ cargo run -- --version
 
 ## Running tests
 
-Again, Doctave uses Cargo. You can run all tests with
+Again, Docgen uses Cargo. You can run all tests with
 
 ```
 $ cargo test
@@ -48,15 +47,14 @@ $ cargo test
 
 This will run unit tests and integration tests.
 
-
 ### Test structure
 
-Doctave has two types of tests: unit tests and integration tests.
+Docgen has two types of tests: unit tests and integration tests.
 
 You will find unit tests at the bottom of source files under `src`. As a general rule, they should
 not have any external dependencies - especially on the file system.
 
-Integrations tests live under the `tests` directory. These tests shell out and execute the doctave
+Integrations tests live under the `tests` directory. These tests shell out and execute the docgen
 binary directly inside an isolated environment. Each test will get its own directory under the
 `_test_area` directory when executed.
 
@@ -107,8 +105,8 @@ integration_test!(build_smoke_test, |area| {
 
 ## Cross-platform compatibility
 
-Doctave runs on Mac, Linux, and Windows, which means you need to be careful about not relying on
-platform-specific features. Most commonly for Doctave, this means you have to be careful when
+Docgen runs on Mac, Linux, and Windows, which means you need to be careful about not relying on
+platform-specific features. Most commonly for Docgen, this means you have to be careful when
 building filesystem paths.
 
 Luckily, Rust has a good solution for this: the `Path` and `PathBuf` structs. If you are familiar
@@ -117,6 +115,6 @@ accessed through a reference, while `PathBuf` is an owned type.
 
 ## CI
 
-Doctave uses [GitHub actions](https://github.com/Doctave/doctave/actions) to run tests
+Docgen uses [GitHub actions](https://github.com/thecodrr/docgen/actions) to run tests
 automatically for each commit and PR. The test suite is executed on Mac, Linux, and Windows. When
 opening a PR, make sure you pass all checks.

@@ -2,11 +2,10 @@
 title: Custom assets
 ---
 
-Custom assets
-=============
+# Custom assets
 
 If you have images or other files besides Markdown files that you wish to include in your project,
-you can place them in a `docs/_include` directory. Doctave will copy all files from that directory
+you can place them in a `docs/_include` directory. Docgen will copy all files from that directory
 into the final site bundle, and place in the root of the directory.
 
 Here's a couple examples:

@@ -2,26 +2,25 @@
 title: Mermaid.js diagrams
 ---
 
-Mermaid.js diagrams
-===================
+# Mermaid.js diagrams
 
-Doctave supports [Mermaid JS](https://mermaid-js.github.io/) diagrams out of the box. All you need
-to do is specify the `mermaid` language for your codeblock, and Doctave will render the diagram for
+Docgen supports [Mermaid JS](https://mermaid-js.github.io/) diagrams out of the box. All you need
+to do is specify the `mermaid` language for your codeblock, and Docgen will render the diagram for
 you.
 
 Diagram types supported include
 
-* Pie chards
-* Sequence diagrams
-* Flowcharts
-* Class diagrams
-* State diagrams
+- Pie chards
+- Sequence diagrams
+- Flowcharts
+- Class diagrams
+- State diagrams
 
 ## Basic example
 
 Specify _mermaid_ as your code block language:
 
-~~~
+````
 ```mermaid
 graph TD;
     A-->B;
@@ -30,7 +29,7 @@ graph TD;
     C-->D;
 
 ```
-~~~
+````
 
 and see your graph rendered as follows:
 
@@ -54,14 +53,15 @@ and playing around with their [live editor](https://mermaid-js.github.io/mermaid
 Below are a few examples to get you started if you want to play around with the Mermaid syntax.
 
 ### Pie chart
-~~~
+
+````
 ```mermaid
 pie title Favorite pie flavor
          "Lemon" : 2
          "Apple" : 3
          "Blueberry" : 5.6
 ```
-~~~
+````
 
 ```mermaid
 pie title Favorite pie flavor
@@ -72,7 +72,7 @@ pie title Favorite pie flavor
 
 ### Sequence diagram
 
-~~~
+````
 ```mermaid
 sequenceDiagram
     Alice ->> Bob: Hello Bob, how are you?
@@ -84,7 +84,7 @@ sequenceDiagram
     Bob-->Alice: Checking with John...
     Alice->John: Yes... John, how are you?
 ```
-~~~
+````
 
 ```mermaid
 sequenceDiagram
@@ -97,12 +97,12 @@ sequenceDiagram
     Bob-->Alice: Checking with John...
     Alice->John: Yes... John, how are you?
 ```
+
 [Source](https://mermaid-js.github.io/mermaid/diagrams-and-syntax-and-examples/examples.html#basic-sequence-diagram).
-
 
 ### State diagram
 
-~~~
+````
 ```mermaid
 stateDiagram-v2
     [*] --> Still
@@ -113,7 +113,7 @@ stateDiagram-v2
     Moving --> Crash
     Crash --> [*]
 ```
-~~~
+````
 
 ```mermaid
 stateDiagram-v2

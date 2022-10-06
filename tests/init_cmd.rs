@@ -42,7 +42,7 @@ integration_test!(does_not_overwite_existing_docs, |area| {
 integration_test!(
     parses_frontmatter_correctly_after_generating_pages_bug_8,
     |area| {
-        // https://github.com/Docgen/docgen/issues/8
+        // https://github.com/Doctave/doctave/issues/8
         //
         // When we generate pages on `init` on Windows we end up automatically using
         // Windows line endings. This seems to then confuse the frontmatter parser.

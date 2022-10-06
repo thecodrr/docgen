@@ -2,10 +2,9 @@
 title: Checks
 ---
 
-Checks
-======
+# Checks
 
-Doctave will over time add various checks that can be run as part of your build. When you run `doctave build`, you will
+Docgen will over time add various checks that can be run as part of your build. When you run `docgen build`, you will
 see any failed checks in the terminal output. To not error out on these checks, use the `--allow-failed-checks` flag.
 
 Currently the only supported check is broken links checking.
@@ -22,7 +21,7 @@ links as warnings in the terminal output. When running a `build`, any broken lin
 Below is some example output for the `serve` command:
 
 ```plain
-$ doctave serve
+$ docgen serve
 
 ...
 
@@ -37,7 +36,7 @@ The following links point to pages that do not exist:
 And the `build` command:
 
 ```plain
-$ doctave build
+$ docgen build
 
 ...
 
@@ -50,5 +49,5 @@ The following links point to pages that do not exist:
 
 ### Limitations
 
-* Only interal links within a Doctave project are checked
-* Anchor tags are not verified
+- Only interal links within a Docgen project are checked
+- Anchor tags are not verified

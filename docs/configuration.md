@@ -2,14 +2,13 @@
 title: Configuration
 ---
 
-Configuration
-=============
+# Configuration
 
 This document goes through all the different configuration options available.
 
-## Doctave.yaml
+## Docgen.yaml
 
-First, let's look at the options available in the `doctave.yaml` file.
+First, let's look at the options available in the `docgen.yaml` file.
 
 {% info :warning: Remember to restart %}
 Any changes you make to this file will only come into effect when you restart the preview
@@ -20,8 +19,8 @@ server, or rebuild your site.
 
 This sets the name of your project. It serves two purposes:
 
-* It will displayed as the title at the top right of the page
-* The HTML page title will be set to this when you're on the root page
+- It will displayed as the title at the top right of the page
+- The HTML page title will be set to this when you're on the root page
 
 This is a **required** setting.
 
@@ -30,7 +29,6 @@ Example:
 ```yaml
 ---
 title: Authentication service
-
 ```
 
 ### port
@@ -42,6 +40,7 @@ This is an optional setting.
 This setting _must be a positive integer_.
 
 Example:
+
 ```yaml
 ---
 port: 5432
@@ -49,7 +48,7 @@ port: 5432
 
 ### base_path
 
-Tells Doctave to generate all URLs based on a subpath. Use this if you are deploying your site under
+Tells Docgen to generate all URLs based on a subpath. Use this if you are deploying your site under
 a subdirectory, such as `https://example.com/docs`.
 
 You won't have to change any URLs inside your docs when this value is changed. You can stil
@@ -62,6 +61,7 @@ This is an optional setting.
 This setting _must be an absolute path_.
 
 Example:
+
 ```yaml
 ---
 base_path: /docs
@@ -69,13 +69,14 @@ base_path: /docs
 
 ### docs_dir
 
-Tells Doctave to use the specified path as the base path for generating documentation.
+Tells Docgen to use the specified path as the base path for generating documentation.
 
 This option should be used if you wish to store your documentation in a directory that is not `docs/`.
 
 This is an optional setting.
 
 Example:
+
 ```yaml
 ---
 docs_dir: custom_documentation_directory/
@@ -97,7 +98,6 @@ Example:
 ---
 colors:
   main: #FF78E4
-
 ```
 
 ### logo
@@ -141,7 +141,7 @@ This is an optional argument.
 Example:
 
 ```
-$ doctave serve --no-color
+$ docgen serve --no-color
 ```
 
 ## Serve command
@@ -157,7 +157,7 @@ This is an optional argument.
 Example:
 
 ```
-$ doctave serve --port 5432
+$ docgen serve --port 5432
 ```
 
 ## Build command
@@ -174,5 +174,5 @@ This is an optional argument.
 Example:
 
 ```
-$ doctave build --release
+$ docgen build --release
 ```

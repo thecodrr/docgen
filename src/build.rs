@@ -20,7 +20,7 @@ impl BuildCommand {
 
         let target_dir = config.out_dir();
 
-        bunt::writeln!(stdout, "{$bold}{$blue}Doctave | Build{/$}{/$}")?;
+        bunt::writeln!(stdout, "{$bold}{$blue}Docgen | Build{/$}{/$}")?;
 
         if let BuildMode::Release = config.build_mode() {
             bunt::writeln!(

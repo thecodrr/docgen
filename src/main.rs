@@ -2,7 +2,7 @@ use bunt::termcolor::{ColorChoice, StandardStream};
 use clap::{App, Arg, ArgMatches, SubCommand};
 
 fn main() {
-    let matches = App::new("Doctave")
+    let matches = App::new("Docgen")
         .version(env!("CARGO_PKG_VERSION"))
         .about(
             "An opinionated static site generator designed specifically \
@@ -77,21 +77,21 @@ fn main() {
     }
 }
 
-fn init(cmd: &ArgMatches) -> doctave::Result<()> {
+fn init(cmd: &ArgMatches) -> docgen::Result<()> {
     let root_dir = std::env::current_dir().expect("Unable to determine current directory");
     let doc_root = cmd.value_of("docs-dir").map(|str| str.to_string());
-    doctave::InitCommand::run(root_dir, !cmd.is_present("no-color"), doc_root)
+    docgen::InitCommand::run(root_dir, !cmd.is_present("no-color"), doc_root)
 }
 
-fn build(cmd: &ArgMatches) -> doctave::Result<()> {
-    let project_dir = doctave::config::project_root().unwrap_or_else(|| {
-        println!("Could not find a doctave project in this directory, or its parents.");
+fn build(cmd: &ArgMatches) -> docgen::Result<()> {
+    let project_dir = docgen::config::project_root().unwrap_or_else(|| {
+        println!("Could not find a docgen project in this directory, or its parents.");
         std::process::exit(1);
     });
 
-    let mut config = doctave::Config::load(&project_dir)?;
+    let mut config = docgen::Config::load(&project_dir)?;
     if cmd.is_present("release") {
-        config.set_build_mode(doctave::BuildMode::Release);
+        config.set_build_mode(docgen::BuildMode::Release);
     }
 
     if cmd.is_present("no-color") {
@@ -102,17 +102,17 @@ fn build(cmd: &ArgMatches) -> doctave::Result<()> {
         config.set_allow_failed_checks();
     }
 
-    doctave::BuildCommand::run(config)
+    docgen::BuildCommand::run(config)
 }
 
-fn serve(cmd: &ArgMatches) -> doctave::Result<()> {
-    let project_dir = doctave::config::project_root().unwrap_or_else(|| {
-        println!("Could not find a doctave project in this directory, or its parents.");
+fn serve(cmd: &ArgMatches) -> docgen::Result<()> {
+    let project_dir = docgen::config::project_root().unwrap_or_else(|| {
+        println!("Could not find a docgen project in this directory, or its parents.");
         std::process::exit(1);
     });
 
-    let mut options = doctave::ServeOptions::default();
-    let mut config = doctave::Config::load(&project_dir)?;
+    let mut options = docgen::ServeOptions::default();
+    let mut config = docgen::Config::load(&project_dir)?;
 
     if let Some(p) = cmd.value_of("port") {
         options.port = Some(p.parse::<u32>().unwrap());
@@ -122,5 +122,5 @@ fn serve(cmd: &ArgMatches) -> doctave::Result<()> {
         config.disable_colors();
     }
 
-    doctave::ServeCommand::run(options, config)
+    docgen::ServeCommand::run(options, config)
 }

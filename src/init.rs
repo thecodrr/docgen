@@ -26,12 +26,12 @@ impl InitCommand {
             custom_docs_dir: custom_doc_root.clone(),
         };
 
-        bunt::writeln!(cmd.stdout, "{$bold}{$blue}Doctave | Init{/$}{/$}")?;
+        bunt::writeln!(cmd.stdout, "{$bold}{$blue}Docgen | Init{/$}{/$}")?;
         bunt::writeln!(cmd.stdout, "Creating your docs...\n")?;
 
         cmd.check_for_existing_project()?;
 
-        cmd.create_doctave_yaml()?;
+        cmd.create_docgen_yaml()?;
 
         if cmd.no_existing_docs_dir() {
             cmd.create_docs_dir()?;
@@ -47,16 +47,16 @@ impl InitCommand {
 
         bunt::writeln!(
             cmd.stdout,
-            "\n{$green}Done!{/$} Run {$bold}doctave serve{/$} to view your docs site locally.",
+            "\n{$green}Done!{/$} Run {$bold}docgen serve{/$} to view your docs site locally.",
         )?;
 
         Ok(())
     }
 
     fn check_for_existing_project(&self) -> Result<()> {
-        if self.project_root.join("doctave.yaml").exists() {
+        if self.project_root.join("docgen.yaml").exists() {
             return Err(Error::new(
-                "Aborting. Found an existing doctave.yaml.\nHave you already run doctave init?",
+                "Aborting. Found an existing docgen.yaml.\nHave you already run docgen init?",
             ));
         }
 
@@ -67,19 +67,19 @@ impl InitCommand {
         !self.doc_root().exists()
     }
 
-    fn create_doctave_yaml(&mut self) -> Result<()> {
-        let mut file = File::create(self.project_root.join("doctave.yaml"))
-            .map_err(|e| Error::io(e, "Could not create doctave.yaml"))?;
+    fn create_docgen_yaml(&mut self) -> Result<()> {
+        let mut file = File::create(self.project_root.join("docgen.yaml"))
+            .map_err(|e| Error::io(e, "Could not create docgen.yaml"))?;
 
         file.write(b"---\ntitle: \"My Project\"\n")
-            .map_err(|e| Error::io(e, "Could not write to doctave.yaml"))?;
+            .map_err(|e| Error::io(e, "Could not write to docgen.yaml"))?;
 
         if let Some(doc_root) = &self.custom_docs_dir {
             file.write(format!("\ndocs_dir: {}\n", doc_root).as_bytes())
-                .map_err(|e| Error::io(e, "Could not write to doctave.yaml"))?;
+                .map_err(|e| Error::io(e, "Could not write to docgen.yaml"))?;
         }
 
-        bunt::writeln!(self.stdout, "Created {$bold}doctave.yaml{/$}...")?;
+        bunt::writeln!(self.stdout, "Created {$bold}docgen.yaml{/$}...")?;
 
         Ok(())
     }

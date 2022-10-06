@@ -90,7 +90,7 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
         Ok(())
     }
 
-    /// Builds fixed assets required by Doctave
+    /// Builds fixed assets required by Docgen
     fn build_assets(&self) -> Result<()> {
         // Add JS
         self.site
@@ -128,10 +128,10 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             .map_err(|e| Error::io(e, "Could not write katex.js to assets directory"))?;
         self.site
             .add_file(
-                &self.config.out_dir().join("assets").join("doctave-app.js"),
+                &self.config.out_dir().join("assets").join("docgen-app.js"),
                 crate::APP_JS.into(),
             )
-            .map_err(|e| Error::io(e, "Could not write doctave-app.js to assets directory"))?;
+            .map_err(|e| Error::io(e, "Could not write docgen-app.js to assets directory"))?;
 
         // Add fonts
         for font in crate::KATEX_FONTS
@@ -225,7 +225,7 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             .config
             .out_dir()
             .join("assets")
-            .join("doctave-style.css");
+            .join("docgen-style.css");
 
         self.site.add_file(&destination, out.into())?;
 

@@ -72,9 +72,9 @@ impl TestArea {
             .expect("Unable to spawn command")
     }
 
-    /// The location of the doctave executable
+    /// The location of the docgen executable
     pub fn binary(&self) -> PathBuf {
-        self.project_root.join("..").join("doctave")
+        self.project_root.join("..").join("docgen")
     }
 
     pub fn mkdir<P: AsRef<Path>>(&self, name: P) {
@@ -82,7 +82,7 @@ impl TestArea {
     }
 
     pub fn create_config(&self) {
-        let mut file = File::create(self.path.join("doctave.yaml")).unwrap();
+        let mut file = File::create(self.path.join("docgen.yaml")).unwrap();
         file.write(b"---\ntitle: Test Project\n").unwrap();
     }
 

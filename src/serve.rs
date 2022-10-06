@@ -28,7 +28,7 @@ impl ServeCommand {
         };
         let site = Arc::new(Site::in_memory(config.clone()));
 
-        bunt::writeln!(stdout, "{$bold}{$blue}Doctave | Serve{/$}{/$}")?;
+        bunt::writeln!(stdout, "{$bold}{$blue}Docgen | Serve{/$}{/$}")?;
         println!("Starting development server...\n");
 
         // Do initial build ---------------------------

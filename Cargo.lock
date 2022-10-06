@@ -292,8 +292,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "doctave"
-version = "0.4.2"
+name = "docgen"
+version = "0.1.0"
 dependencies = [
  "alphanumeric-sort",
  "ammonia",

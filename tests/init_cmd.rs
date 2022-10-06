@@ -12,7 +12,7 @@ integration_test!(init_smoke_test, |area| {
 
     assert_success(&result);
 
-    assert_output(&result, "Created doctave.yaml...");
+    assert_output(&result, "Created docgen.yaml...");
     assert_output(&result, "Created docs folder...");
     assert_output(
         &result,
@@ -21,12 +21,12 @@ integration_test!(init_smoke_test, |area| {
 
     assert_output(
         &result,
-        "Done! Run doctave serve to view your docs site locally.",
+        "Done! Run docgen serve to view your docs site locally.",
     );
 
     area.assert_exists(Path::new("docs").join("README.md"));
     area.assert_exists(Path::new("docs").join("examples.md"));
-    area.assert_exists(Path::new("doctave.yaml"));
+    area.assert_exists(Path::new("docgen.yaml"));
 });
 
 integration_test!(does_not_overwite_existing_docs, |area| {
@@ -42,7 +42,7 @@ integration_test!(does_not_overwite_existing_docs, |area| {
 integration_test!(
     parses_frontmatter_correctly_after_generating_pages_bug_8,
     |area| {
-        // https://github.com/Doctave/doctave/issues/8
+        // https://github.com/Docgen/docgen/issues/8
         //
         // When we generate pages on `init` on Windows we end up automatically using
         // Windows line endings. This seems to then confuse the frontmatter parser.
@@ -64,12 +64,12 @@ integration_test!(
     }
 );
 
-integration_test!(creates_doctave_yaml, |area| {
+integration_test!(creates_docgen_yaml, |area| {
     let result = area.cmd(&["init"]);
     assert_success(&result);
 
     area.assert_contains(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: \"My Project\"
@@ -77,14 +77,14 @@ integration_test!(creates_doctave_yaml, |area| {
     );
 });
 
-integration_test!(bails_if_doctave_yaml_already_exists, |area| {
-    area.write_file(Path::new("doctave.yaml"), b"---\ntitle: I exist\n");
+integration_test!(bails_if_docgen_yaml_already_exists, |area| {
+    area.write_file(Path::new("docgen.yaml"), b"---\ntitle: I exist\n");
 
     let result = area.cmd(&["init"]);
     assert_failed(&result);
 
-    assert_output(&result, "Aborting. Found an existing doctave.yaml.");
-    assert_output(&result, "Have you already run doctave init?");
+    assert_output(&result, "Aborting. Found an existing docgen.yaml.");
+    assert_output(&result, "Have you already run docgen init?");
 });
 
 integration_test!(skips_generating_docs_if_docs_folder_exists, |area| {
@@ -97,7 +97,7 @@ integration_test!(skips_generating_docs_if_docs_folder_exists, |area| {
 
     area.refute_exists(Path::new("docs").join("README.md"));
     area.refute_exists(Path::new("docs").join("examples.md"));
-    area.assert_exists(Path::new("doctave.yaml"));
+    area.assert_exists(Path::new("docgen.yaml"));
 });
 
 integration_test!(custom_docsdir_generates, |area| {
@@ -105,7 +105,7 @@ integration_test!(custom_docsdir_generates, |area| {
     assert_success(&result);
 
     area.assert_contains(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
         ---
         title: \"My Project\"
@@ -126,5 +126,5 @@ integration_test!(custom_docsdir_skips_generating_if_path_exists, |area| {
 
     area.refute_exists(Path::new("custom_docs_dir").join("README.md"));
     area.refute_exists(Path::new("custom_docs_dir").join("examples.md"));
-    area.assert_exists(Path::new("doctave.yaml"));
+    area.assert_exists(Path::new("docgen.yaml"));
 });

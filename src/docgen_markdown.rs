@@ -1258,7 +1258,7 @@ mod test {
 
     #[test]
     fn code_blocks_in_headings_included_in_heading_titles() {
-        // https://github.com/Doctave/doctave/issues/15
+        // https://github.com/Docgen/docgen/issues/15
         let input = indoc! {"
         # Foo `bar` baz
         "};

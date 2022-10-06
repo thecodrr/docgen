@@ -11,7 +11,7 @@ use crate::site::BuildMode;
 use crate::{Error, Result};
 
 #[derive(Debug, Clone, Deserialize)]
-struct DoctaveYaml {
+struct DocgenYaml {
     title: String,
     port: Option<u32>,
     colors: Option<ColorsYaml>,
@@ -21,12 +21,12 @@ struct DoctaveYaml {
     docs_dir: Option<String>,
 }
 
-impl DoctaveYaml {
+impl DocgenYaml {
     fn find(root: &Path) -> Option<PathBuf> {
-        if root.join("doctave.yaml").exists() {
-            Some(root.join("doctave.yaml"))
-        } else if root.join("doctave.yml").exists() {
-            Some(root.join("doctave.yml"))
+        if root.join("docgen.yaml").exists() {
+            Some(root.join("docgen.yaml"))
+        } else if root.join("docgen.yml").exists() {
+            Some(root.join("docgen.yml"))
         } else {
             None
         }
@@ -46,7 +46,7 @@ impl DoctaveYaml {
             Rgb::from_hex_str(color).map_err(|_e| {
                 Error::new(format!(
                     "Invalid HEX color provided for \
-                    colors.main in doctave.yaml.\nFound '{}'",
+                    colors.main in docgen.yaml.\nFound '{}'",
                     &self.colors.as_ref().and_then(|c| c.main.as_ref()).unwrap()
                 ))
             })?;
@@ -57,7 +57,7 @@ impl DoctaveYaml {
             let location = docs_dir_path.join("_include").join(p);
             if !location.exists() {
                 return Err(Error::new(format!(
-                    "Could not find logo specified in doctave.yaml at {}.\n\
+                    "Could not find logo specified in docgen.yaml at {}.\n\
                      The logo path should be relative to the _include directory.",
                     location.display()
                 )));
@@ -68,7 +68,7 @@ impl DoctaveYaml {
         // Validate navigation wildcards recursively
         fn validate_level(
             nav: &Navigation,
-            config: &DoctaveYaml,
+            config: &DocgenYaml,
             project_root: &Path,
         ) -> Result<()> {
             if !project_root.join(&nav.path).exists() {
@@ -261,39 +261,39 @@ pub struct Config {
 
 impl Config {
     pub fn load(project_root: &Path) -> Result<Self> {
-        let path = DoctaveYaml::find(&project_root)
-            .ok_or(Error::new("Could not find doctave.yaml in project"))?;
+        let path = DocgenYaml::find(&project_root)
+            .ok_or(Error::new("Could not find docgen.yaml in project"))?;
 
         let yaml =
-            fs::read_to_string(path).map_err(|_| Error::new("Could not read doctave.yaml file"))?;
+            fs::read_to_string(path).map_err(|_| Error::new("Could not read docgen.yaml file"))?;
 
         Config::from_yaml_str(project_root, &yaml)
     }
 
     pub fn from_yaml_str(project_root: &Path, yaml: &str) -> Result<Self> {
-        let mut doctave_yaml: DoctaveYaml = serde_yaml::from_str(yaml)
-            .map_err(|e| Error::yaml(e, "Could not parse doctave.yaml"))?;
+        let mut docgen_yaml: DocgenYaml = serde_yaml::from_str(yaml)
+            .map_err(|e| Error::yaml(e, "Could not parse docgen.yaml"))?;
 
-        doctave_yaml.validate(project_root)?;
+        docgen_yaml.validate(project_root)?;
 
         let config = Config {
             color: true,
             allow_failed_checks: false,
             project_root: project_root.to_path_buf(),
             out_dir: project_root.join("site"),
-            docs_dir: doctave_yaml.docs_dir(project_root),
-            base_path: doctave_yaml.base_path.unwrap_or(String::from("/")),
-            title: doctave_yaml.title,
-            colors: doctave_yaml
+            docs_dir: docgen_yaml.docs_dir(project_root),
+            base_path: docgen_yaml.base_path.unwrap_or(String::from("/")),
+            title: docgen_yaml.title,
+            colors: docgen_yaml
                 .colors
                 .map(|c| c.into())
                 .unwrap_or(Colors::default()),
-            logo: doctave_yaml
+            logo: docgen_yaml
                 .logo
                 .map(|p| Link::path_to_uri_with_extension(&p))
                 .map(|p| p.as_str().trim_start_matches("/").to_owned()),
-            navigation: doctave_yaml.navigation.map(|n| NavRule::from_yaml_input(n)),
-            port: doctave_yaml.port.unwrap_or_else(|| 4001),
+            navigation: docgen_yaml.navigation.map(|n| NavRule::from_yaml_input(n)),
+            port: docgen_yaml.port.unwrap_or_else(|| 4001),
             build_mode: BuildMode::Dev,
         };
 
@@ -305,7 +305,7 @@ impl Config {
         &self.title
     }
 
-    /// The root directory of the project - the folder containing the doctave.yaml file.
+    /// The root directory of the project - the folder containing the docgen.yaml file.
     pub fn project_root(&self) -> &Path {
         &self.project_root
     }
@@ -388,7 +388,7 @@ pub fn project_root() -> Option<PathBuf> {
 
     loop {
         // If we are in the root dir, just return it
-        if current_dir.join("doctave.yaml").exists() || current_dir.join("doctave.yml").exists() {
+        if current_dir.join("docgen.yaml").exists() || current_dir.join("docgen.yml").exists() {
             return Some(current_dir);
         }
 
@@ -419,7 +419,7 @@ mod test {
 
         assert!(
             format!("{}", error)
-                .contains("Invalid HEX color provided for colors.main in doctave.yaml"),
+                .contains("Invalid HEX color provided for colors.main in docgen.yaml"),
             "Error message was: {}",
             error
         );
@@ -441,7 +441,7 @@ mod test {
         let error = Config::from_yaml_str(Path::new(""), yaml).unwrap_err();
 
         assert!(
-            format!("{}", error).contains("Could not find logo specified in doctave.yaml"),
+            format!("{}", error).contains("Could not find logo specified in docgen.yaml"),
             "Error message was: {}",
             error
         );

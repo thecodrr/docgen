@@ -1,8 +1,11 @@
 [package]
-name = "doctave"
-version = "0.4.2"
-authors = ["Niklas Begley <nik@doctave.com>"]
-edition = "2018"
+name = "docgen"
+version = "0.1.0"
+authors = [
+    "Abdullah Atta <abdullahatta@streetwriters.co>",
+    "Niklas Begley <nik@doctave.com>",
+]
+edition = "2021"
 
 [dependencies]
 clap = "2.33.3"

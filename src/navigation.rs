@@ -23,7 +23,7 @@ impl<'a> Navigation<'a> {
     }
 
     /// Customizes the navigation tree given some rules provided through the
-    /// doctave.yaml config.
+    /// docgen.yaml config.
     ///
     /// Note that the config validates that any files/directories referenced
     /// in the rules already exist, which is why we can reasonably confidently

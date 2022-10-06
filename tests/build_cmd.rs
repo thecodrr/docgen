@@ -204,7 +204,7 @@ integration_test!(frontmatter, |area| {
 
     let index = std::fs::read_to_string(&index).unwrap();
 
-    let start = index.find("<div class='doctave-content'>").unwrap();
+    let start = index.find("<div class='docgen-content'>").unwrap();
     let end = index.find("<div class='sidebar-right'>").unwrap();
 
     // Check that there is no line between the beginning and end of the content
@@ -261,7 +261,7 @@ integration_test!(missing_directory_index, |area| {
     let nested_index = Path::new("site").join("nested").join("index.html");
     area.assert_contains(
         &nested_index,
-        "This page was generated automatically by Doctave",
+        "This page was generated automatically by Docgen",
     );
 });
 
@@ -330,7 +330,7 @@ integration_test!(include_folder, |area| {
 integration_test!(custom_colors, |area| {
     area.mkdir(Path::new("docs"));
     area.write_file(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: Custom colors
@@ -345,7 +345,7 @@ integration_test!(custom_colors, |area| {
     let result = area.cmd(&["build"]);
     assert_success(&result);
 
-    let css = Path::new("site").join("assets").join("doctave-style.css");
+    let css = Path::new("site").join("assets").join("docgen-style.css");
     // Should contain the RGB value for #5f658a
     area.assert_contains(&css, "color: rgb(95,101,138);");
 });
@@ -353,7 +353,7 @@ integration_test!(custom_colors, |area| {
 integration_test!(custom_colors_invalid, |area| {
     area.mkdir(Path::new("docs"));
     area.write_file(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: Custom colors
@@ -369,7 +369,7 @@ integration_test!(custom_colors_invalid, |area| {
     assert_failed(&result);
     assert_output(
         &result,
-        "Invalid HEX color provided for colors.main in doctave.yaml.",
+        "Invalid HEX color provided for colors.main in docgen.yaml.",
     );
     assert_output(&result, "Found 'not-a-color'");
 });
@@ -404,7 +404,7 @@ integration_test!(custom_logo, |area| {
 
     // Include the logo in the config
     area.write_file(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: Custom colors
@@ -455,7 +455,7 @@ integration_test!(cache_buster, |area| {
     // roll over to start with the number 2.
     //
     // Famous last words ofc...
-    area.assert_contains(&index, "doctave-style.css?v=1");
+    area.assert_contains(&index, "docgen-style.css?v=1");
 });
 
 integration_test!(base_path, |area| {
@@ -464,7 +464,7 @@ integration_test!(base_path, |area| {
     area.write_file(Path::new("docs").join("README.md"), b"[link](/foo)");
     area.write_file(Path::new("docs").join("foo.md"), b"[link](/)");
     area.write_file(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: Base Path
@@ -492,7 +492,7 @@ integration_test!(base_path_with_custom_navigation, |area| {
     area.write_file(Path::new("docs").join("README.md"), b"[link](/other)");
     area.write_file(Path::new("docs").join("other.md"), b"[link](/)");
     area.write_file(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: Base Path
@@ -530,7 +530,7 @@ integration_test!(base_path_with_logo, |area| {
         b"",
     );
     area.write_file(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: Base Path
@@ -551,10 +551,10 @@ integration_test!(base_path_with_logo, |area| {
     area.refute_contains(&index, "<a href='/'>");
 });
 
-// See (Issue 18)[https://github.com/Doctave/doctave/issues/18]
+// See (Issue 18)[https://github.com/Docgen/docgen/issues/18]
 integration_test!(issue_18, |area| {
     area.write_file(
-        Path::new("doctave.yaml"),
+        Path::new("docgen.yaml"),
         indoc! {"
     ---
     title: Test project

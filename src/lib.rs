@@ -9,8 +9,8 @@ extern crate lazy_static;
 mod broken_links_checker;
 mod build;
 pub mod config;
+mod docgen_markdown;
 mod docs_finder;
-mod doctave_markdown;
 mod error;
 mod frontmatter;
 mod init;
@@ -35,7 +35,7 @@ pub use init::InitCommand;
 pub use serve::{ServeCommand, ServeOptions};
 pub use site::BuildMode;
 
-pub use doctave_markdown::{Heading, Markdown};
+pub use docgen_markdown::{Heading, Markdown};
 use handlebars::Handlebars;
 use include_dir::{include_dir, Dir};
 use navigation::Link;
@@ -180,12 +180,12 @@ impl Document {
         };
 
         let markdown_options = {
-            let mut opts = doctave_markdown::ParseOptions::default();
+            let mut opts = docgen_markdown::ParseOptions::default();
             opts.url_root = base_path.to_owned();
             opts
         };
 
-        let markdown = doctave_markdown::parse(frontmatter::without(&raw), Some(markdown_options));
+        let markdown = docgen_markdown::parse(frontmatter::without(&raw), Some(markdown_options));
 
         Document {
             id: DOCUMENT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
@@ -238,7 +238,7 @@ impl Document {
         &self.markdown.headings
     }
 
-    fn outgoing_links(&self) -> &[doctave_markdown::Link] {
+    fn outgoing_links(&self) -> &[docgen_markdown::Link] {
         &self.markdown.links
     }
 

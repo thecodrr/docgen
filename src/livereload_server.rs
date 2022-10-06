@@ -122,7 +122,7 @@ fn livereload_handshake(websocket: &mut WebSocket<std::net::TcpStream>) -> io::R
         {
             "command": "hello",
             "protocols": ["http://livereload.com/protocols/official-7"],
-            "serverName": "doctave"
+            "serverName": "docgen"
         }
         "#;
 

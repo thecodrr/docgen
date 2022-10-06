@@ -1,4 +1,4 @@
-use crate::doctave_markdown;
+use crate::docgen_markdown;
 use std::fmt;
 use std::path::PathBuf;
 
@@ -37,7 +37,7 @@ impl Error {
         }
     }
 
-    pub fn broken_links(links: Vec<(PathBuf, doctave_markdown::Link)>) -> Self {
+    pub fn broken_links(links: Vec<(PathBuf, docgen_markdown::Link)>) -> Self {
         Error {
             kind: ErrorKind::BrokenLinks(links),
             message: "Detected broken internal links".into(),
@@ -50,7 +50,7 @@ pub enum ErrorKind {
     IO(std::io::Error),
     Handlebars(handlebars::RenderError),
     Yaml(serde_yaml::Error),
-    BrokenLinks(Vec<(PathBuf, doctave_markdown::Link)>),
+    BrokenLinks(Vec<(PathBuf, docgen_markdown::Link)>),
     Generic,
 }
 
@@ -68,13 +68,13 @@ impl fmt::Display for Error {
     }
 }
 
-fn format_broken_links(links: &[(PathBuf, doctave_markdown::Link)]) -> String {
+fn format_broken_links(links: &[(PathBuf, docgen_markdown::Link)]) -> String {
     let mut buf = String::from("The following links point to pages that do not exist:\n\n");
 
     for (path, link) in links {
         let url = match &link.url {
-            doctave_markdown::UrlType::Local(path) => format!("{}", path.display()),
-            doctave_markdown::UrlType::Remote(uri) => format!("{:?}", uri),
+            docgen_markdown::UrlType::Local(path) => format!("{}", path.display()),
+            docgen_markdown::UrlType::Remote(uri) => format!("{:?}", uri),
         };
 
         buf.push_str(&format!(

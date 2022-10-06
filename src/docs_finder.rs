@@ -98,7 +98,7 @@ fn generate_missing_index(dir: &mut Directory, config: &Config) -> Document {
         format!(
             "# Index of {}\n \
                 \n \
-                This page was generated automatically by Doctave, because the directory \
+                This page was generated automatically by Docgen, because the directory \
                 `{}` did not contain an index `README.md` file. You can customize this page by \
                 creating one yourself.\
                 \n\

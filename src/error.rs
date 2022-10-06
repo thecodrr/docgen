@@ -1,3 +1,4 @@
+use crate::doctave_markdown;
 use std::fmt;
 use std::path::PathBuf;
 

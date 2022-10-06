@@ -10,6 +10,7 @@ mod broken_links_checker;
 mod build;
 pub mod config;
 mod docs_finder;
+mod doctave_markdown;
 mod error;
 mod frontmatter;
 mod init;

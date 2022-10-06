@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::doctave_markdown;
 use crate::preview_server::resolve_file;
 use crate::site::{Site, SiteBackend};
 use crate::Directory;

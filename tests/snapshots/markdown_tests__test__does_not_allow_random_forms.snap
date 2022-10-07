@@ -1,0 +1,10 @@
+---
+source: tests/markdown_tests.rs
+description: does_not_allow_random_forms
+info: "<form>\n  <label for=\"ufname\">First name:</label><br>\n  <input type=\"text\" id=\"fname\" name=\"fname\"><br>\n  <label for=\"lname\">Last name:</label><br>\n  <input type=\"text\" id=\"lname\" name=\"lname\">\n</form>"
+---
+Markdown {
+    as_html: "",
+    headings: [],
+    links: [],
+}

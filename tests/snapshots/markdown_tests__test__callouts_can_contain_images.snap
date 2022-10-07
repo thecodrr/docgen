@@ -1,0 +1,10 @@
+---
+source: tests/markdown_tests.rs
+description: callouts_can_contain_images
+info: "{% info An Info %}\n![an pic](/cat.jpg)\n{% end %}\n"
+---
+Markdown {
+    as_html: "<div class=\"callout info\"><p class=\"callout-title\">An Info</p>\n<p>\n<img src=\"/cat.jpg\" alt=\"an pic\">\n</p>\n</div>",
+    headings: [],
+    links: [],
+}

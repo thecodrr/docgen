@@ -1,0 +1,17 @@
+---
+source: tests/markdown_tests.rs
+description: does_not_rewrite_relative_urls
+info: "\n[a relative link](relative/link)\n"
+---
+Markdown {
+    as_html: "<p><a href=\"relative/link\">a relative link</a></p>\n",
+    headings: [],
+    links: [
+        Link {
+            title: "a relative link",
+            url: Local(
+                "relative/link",
+            ),
+        },
+    ],
+}

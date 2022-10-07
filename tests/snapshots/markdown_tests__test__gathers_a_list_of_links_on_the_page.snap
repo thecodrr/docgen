@@ -1,0 +1,57 @@
+---
+source: tests/markdown_tests.rs
+description: gathers_a_list_of_links_on_the_page
+info: "[foo](/bar)\n[Example](https://www.example.com)\n[Example 2](https://www.example2.com)"
+---
+Markdown {
+    as_html: "<p><a href=\"/bar\">foo</a>\n<a href=\"https://www.example.com\">Example</a>\n<a href=\"https://www.example2.com\">Example 2</a></p>\n",
+    headings: [],
+    links: [
+        Link {
+            title: "foo",
+            url: Local(
+                "/bar",
+            ),
+        },
+        Link {
+            title: "Example",
+            url: Remote(
+                Url {
+                    scheme: "https",
+                    cannot_be_a_base: false,
+                    username: "",
+                    password: None,
+                    host: Some(
+                        Domain(
+                            "www.example.com",
+                        ),
+                    ),
+                    port: None,
+                    path: "/",
+                    query: None,
+                    fragment: None,
+                },
+            ),
+        },
+        Link {
+            title: "Example 2",
+            url: Remote(
+                Url {
+                    scheme: "https",
+                    cannot_be_a_base: false,
+                    username: "",
+                    password: None,
+                    host: Some(
+                        Domain(
+                            "www.example2.com",
+                        ),
+                    ),
+                    port: None,
+                    path: "/",
+                    query: None,
+                    fragment: None,
+                },
+            ),
+        },
+    ],
+}

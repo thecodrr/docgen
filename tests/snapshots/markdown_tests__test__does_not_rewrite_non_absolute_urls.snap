@@ -1,0 +1,31 @@
+---
+source: tests/markdown_tests.rs
+description: does_not_rewrite_non_absolute_urls
+info: "\n[an link](https://www.google.com)\n"
+---
+Markdown {
+    as_html: "<p><a href=\"https://www.google.com\">an link</a></p>\n",
+    headings: [],
+    links: [
+        Link {
+            title: "an link",
+            url: Remote(
+                Url {
+                    scheme: "https",
+                    cannot_be_a_base: false,
+                    username: "",
+                    password: None,
+                    host: Some(
+                        Domain(
+                            "www.google.com",
+                        ),
+                    ),
+                    port: None,
+                    path: "/",
+                    query: None,
+                    fragment: None,
+                },
+            ),
+        },
+    ],
+}

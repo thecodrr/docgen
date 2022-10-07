@@ -1,0 +1,31 @@
+---
+source: tests/markdown_tests.rs
+description: does_not_append_params_to_urls_with_a_specific_domain
+info: "\n[an link](http://www.example.com/)\n"
+---
+Markdown {
+    as_html: "<p><a href=\"http://www.example.com/\">an link</a></p>\n",
+    headings: [],
+    links: [
+        Link {
+            title: "an link",
+            url: Remote(
+                Url {
+                    scheme: "http",
+                    cannot_be_a_base: false,
+                    username: "",
+                    password: None,
+                    host: Some(
+                        Domain(
+                            "www.example.com",
+                        ),
+                    ),
+                    port: None,
+                    path: "/",
+                    query: None,
+                    fragment: None,
+                },
+            ),
+        },
+    ],
+}

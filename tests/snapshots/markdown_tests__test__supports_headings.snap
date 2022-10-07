@@ -1,0 +1,23 @@
+---
+source: tests/markdown_tests.rs
+description: supports_headings
+info: "# My heading\n\nSome content\n\n## Some other heading"
+---
+Markdown {
+    as_html: "<h1 id=\"my-heading\">My heading</h1>\n<p>Some content</p>\n<h2 id=\"some-other-heading\">Some other heading</h2>\n",
+    headings: [
+        Heading {
+            title: "My heading",
+            anchor: "my-heading",
+            level: 1,
+            is_tab: false,
+        },
+        Heading {
+            title: "Some other heading",
+            anchor: "some-other-heading",
+            level: 2,
+            is_tab: false,
+        },
+    ],
+    links: [],
+}

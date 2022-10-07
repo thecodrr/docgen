@@ -9,7 +9,7 @@ extern crate lazy_static;
 mod broken_links_checker;
 mod build;
 pub mod config;
-mod docgen_markdown;
+pub mod docgen_markdown;
 mod docs_finder;
 mod error;
 mod frontmatter;

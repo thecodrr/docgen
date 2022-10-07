@@ -1,0 +1,17 @@
+---
+source: tests/markdown_tests.rs
+description: supports_links
+info: "\n[an link](/foo/bar)\n"
+---
+Markdown {
+    as_html: "<p><a href=\"/foo/bar\">an link</a></p>\n",
+    headings: [],
+    links: [
+        Link {
+            title: "an link",
+            url: Local(
+                "/foo/bar",
+            ),
+        },
+    ],
+}

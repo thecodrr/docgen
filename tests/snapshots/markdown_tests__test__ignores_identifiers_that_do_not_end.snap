@@ -1,0 +1,10 @@
+---
+source: tests/markdown_tests.rs
+description: ignores_identifiers_that_do_not_end
+info: "Look at this :stop"
+---
+Markdown {
+    as_html: "<p>Look at this :stop</p>\n",
+    headings: [],
+    links: [],
+}

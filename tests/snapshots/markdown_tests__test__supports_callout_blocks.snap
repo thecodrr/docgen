@@ -1,0 +1,10 @@
+---
+source: tests/markdown_tests.rs
+description: Supports callout blocks
+info: "{% info An Note %}\n\nThe content\n\nMore content\n\n{% end %}\n\n---\n\n{% notice An Note %}\n\nThe content\n\nMore content\n\n{% end %}\n\n---\n\n{% success An Note %}\n\nThe content\n\nMore content\n\n{% end %}\n\n---\n\n{% warn An Note %}\n\nThe content\n\nMore content\n\n{% end %}\n\n---\n\n{% warning An Note %}\n\nThe content\n\nMore content\n\n{% end %}\n\n---\n\n{% error An Note %}\n\nThe content\n\nMore content\n\n{% end %}"
+---
+Markdown {
+    as_html: "<div class=\"callout info\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n<p>More content</p>\n</div><div class=\"callout info\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n<p>More content</p>\n</div><div class=\"callout success\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n<p>More content</p>\n</div><div class=\"callout warning\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n<p>More content</p>\n</div><div class=\"callout warning\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n<p>More content</p>\n</div><div class=\"callout error\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n<p>More content</p>\n</div>",
+    headings: [],
+    links: [],
+}

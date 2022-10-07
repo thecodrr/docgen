@@ -24,6 +24,8 @@ Docgen comes with a number of documentation-specific features out of the box. No
 - Dark mode
 - GitHub flavored markdown
 - Minimal configuration
+- Symlinked files **[new]**
+- Tabs **[new]**
 - Fast build times (Docgen is built with Rust)
 
 ## Hosting

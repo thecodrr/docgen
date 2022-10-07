@@ -16,7 +16,7 @@ pub struct ServeCommand {}
 
 #[derive(Default)]
 pub struct ServeOptions {
-    pub port: Option<u32>,
+    pub port: Option<u16>,
 }
 
 impl ServeCommand {
@@ -26,6 +26,7 @@ impl ServeCommand {
         } else {
             StandardStream::stdout(ColorChoice::Never)
         };
+
         let site = Arc::new(Site::in_memory(config.clone()));
 
         bunt::writeln!(stdout, "{$bold}{$blue}Docgen | Serve{/$}{/$}")?;
@@ -55,7 +56,7 @@ impl ServeCommand {
         // Live Reload --------------------------------
 
         let (reload_send, reload_rcv) = bounded(128);
-        let livereload_server = LivereloadServer::new(reload_rcv);
+        let livereload_server = LivereloadServer::new(config.livereload_addr(), reload_rcv);
         thread::Builder::new()
             .name("livereload".into())
             .spawn(move || livereload_server.run())
@@ -63,10 +64,11 @@ impl ServeCommand {
 
         // Preview Server -----------------------------
 
-        let port = options.port.unwrap_or_else(|| config.port());
+        let mut addr = config.addr().clone();
+        addr.set_port(options.port.unwrap_or_else(|| config.addr().port()));
 
         let http_server = PreviewServer::new(
-            &format!("0.0.0.0:{}", port),
+            addr,
             site.clone(),
             config.color_enabled(),
             config.base_path().to_owned(),

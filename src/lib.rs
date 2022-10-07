@@ -6,6 +6,7 @@ extern crate indoc;
 #[macro_use]
 extern crate lazy_static;
 
+pub mod address;
 mod broken_links_checker;
 mod build;
 pub mod config;

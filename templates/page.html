@@ -107,7 +107,8 @@
     <script type="text/javascript" src="{{ base_path }}assets/docgen-app.js?v={{ timestamp }}"></script>
 
     {{#if (eq build_mode "dev") }}
-    <script type='text/javascript' src="{{ base_path }}assets/livereload.js?port=35729" async="" defer=""></script>
+    <script type='text/javascript' src="{{ base_path }}assets/livereload.js?port={{ livereload_port }}" async=""
+        defer=""></script>
 
     <script>
         // Don't reset scrolling on livereload

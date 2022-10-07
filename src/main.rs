@@ -115,7 +115,7 @@ fn serve(cmd: &ArgMatches) -> docgen::Result<()> {
     let mut config = docgen::Config::load(&project_dir)?;
 
     if let Some(p) = cmd.value_of("port") {
-        options.port = Some(p.parse::<u32>().unwrap());
+        options.port = Some(p.parse::<u16>().unwrap());
     }
 
     if cmd.is_present("no-color") {

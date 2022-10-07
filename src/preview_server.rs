@@ -9,6 +9,22 @@ use tiny_http::{Request, Response, Server};
 
 use crate::site::{Site, SiteBackend};
 
+macro_rules! colorprint {
+    ($color: expr, $format_str:literal $(, $arg:expr)* $(,)?) => {
+        let mut stdout = if $color {
+            StandardStream::stdout(ColorChoice::Auto)
+        } else {
+            StandardStream::stdout(ColorChoice::Never)
+        };
+
+        bunt::writeln!(
+            stdout,
+            [$format_str] $(, $arg )*
+        )
+        .unwrap();
+    };
+}
+
 pub struct PreviewServer<B: SiteBackend> {
     color: bool,
     base_path: String,
@@ -17,9 +33,9 @@ pub struct PreviewServer<B: SiteBackend> {
 }
 
 impl<B: SiteBackend> PreviewServer<B> {
-    pub fn new(addr: &str, site: Arc<Site<B>>, color: bool, base_path: String) -> Self {
+    pub fn new(addr: SocketAddr, site: Arc<Site<B>>, color: bool, base_path: String) -> Self {
         PreviewServer {
-            addr: addr.parse().expect("invalid address for preview server"),
+            addr,
             site,
             color,
             base_path,
@@ -31,19 +47,12 @@ impl<B: SiteBackend> PreviewServer<B> {
         let mut pool = scoped_threadpool::Pool::new(16);
 
         {
-            let mut stdout = if self.color {
-                StandardStream::stdout(ColorChoice::Auto)
-            } else {
-                StandardStream::stdout(ColorChoice::Never)
-            };
-
-            bunt::writeln!(
-                stdout,
+            colorprint!(
+                self.color,
                 "Server running on {$bold}http://{}{}{/$}\n",
                 self.addr,
                 self.base_path
-            )
-            .unwrap();
+            );
         }
 
         for request in server.incoming_requests() {

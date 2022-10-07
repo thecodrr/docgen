@@ -1,4 +1,5 @@
 use std::fs;
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
 use colorsys::prelude::*;
@@ -6,6 +7,7 @@ use colorsys::Rgb;
 use http::Uri;
 use serde::Deserialize;
 
+use crate::address::get_safe_addr;
 use crate::navigation::Link;
 use crate::site::BuildMode;
 use crate::{Error, Result};
@@ -13,7 +15,7 @@ use crate::{Error, Result};
 #[derive(Debug, Clone, Deserialize)]
 struct DocgenYaml {
     title: String,
-    port: Option<u32>,
+    port: Option<u16>,
     colors: Option<ColorsYaml>,
     logo: Option<PathBuf>,
     navigation: Option<Vec<Navigation>>,
@@ -255,8 +257,9 @@ pub struct Config {
     colors: Colors,
     logo: Option<String>,
     navigation: Option<Vec<NavRule>>,
-    port: u32,
     build_mode: BuildMode,
+    preview_addr: SocketAddr,
+    livereload_addr: SocketAddr,
 }
 
 impl Config {
@@ -276,6 +279,11 @@ impl Config {
 
         docgen_yaml.validate(project_root)?;
 
+        let preview_addr = get_safe_addr("0.0.0.0", docgen_yaml.port.unwrap_or_else(|| 4001))
+            .expect("Failed to get address for preview server.");
+        let livereload_addr = get_safe_addr("127.0.0.1", 35729)
+            .expect("Failed to get address for live reload server.");
+
         let config = Config {
             color: true,
             allow_failed_checks: false,
@@ -293,7 +301,8 @@ impl Config {
                 .map(|p| Link::path_to_uri_with_extension(&p))
                 .map(|p| p.as_str().trim_start_matches("/").to_owned()),
             navigation: docgen_yaml.navigation.map(|n| NavRule::from_yaml_input(n)),
-            port: docgen_yaml.port.unwrap_or_else(|| 4001),
+            preview_addr,
+            livereload_addr,
             build_mode: BuildMode::Dev,
         };
 
@@ -331,8 +340,13 @@ impl Config {
     }
 
     /// Port to serve the development server on
-    pub fn port(&self) -> u32 {
-        self.port
+    pub fn addr(&self) -> SocketAddr {
+        self.preview_addr
+    }
+
+    /// Port to serve the livereload server on
+    pub fn livereload_addr(&self) -> SocketAddr {
+        self.livereload_addr
     }
 
     pub fn color_enabled(&self) -> bool {

@@ -325,6 +325,7 @@ dependencies = [
  "insta",
  "lazy_static",
  "notify",
+ "port_scanner",
  "pulldown-cmark",
  "rayon",
  "regex",
@@ -1030,6 +1031,12 @@ checksum = "b6796ad771acdc0123d2a88dc428b5e38ef24456743ddb1744ed628f9815c096"
 dependencies = [
  "siphasher",
 ]
+
+[[package]]
+name = "port_scanner"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "325a6d2ac5dee293c3b2612d4993b98aec1dff096b0a2dae70ed7d95784a05da"
 
 [[package]]
 name = "ppv-lite86"

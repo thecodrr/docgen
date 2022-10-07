@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 mod support;
 
+use docgen::address::get_safe_addr;
 use std::path::Path;
 use std::process::Command;
 use std::sync::mpsc::channel;
@@ -12,13 +13,14 @@ integration_test!(serve_smoke_test, |area| {
     area.write_file(Path::new("docs").join("README.md"), b"# Some content");
     let binary = area.binary();
     let path = area.path.to_path_buf();
+    let safe_addr = get_safe_addr("127.0.0.1", 4001).expect("Failed to get new available address.");
 
     let (sender1, receiver1) = channel::<()>();
     let (sender2, receiver2) = channel::<()>();
 
     std::thread::spawn(move || {
         let mut handle = Command::new(binary)
-            .args(&["serve"])
+            .args(&["serve", "--port", safe_addr.port().to_string().as_str()])
             .current_dir(path)
             .stdout(std::process::Stdio::null())
             .spawn()
@@ -39,7 +41,7 @@ integration_test!(serve_smoke_test, |area| {
 
     receiver2.recv().unwrap();
 
-    let mut stream = TcpStream::connect("localhost:4001").unwrap();
+    let mut stream = TcpStream::connect(safe_addr).unwrap();
 
     let mut request_data = String::new();
     request_data.push_str("GET / HTTP/1.0");

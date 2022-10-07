@@ -1,4 +1,5 @@
 use std::io;
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -18,13 +19,15 @@ use tungstenite::protocol::WebSocket;
 /// This module expects the client to already have access to it by some
 /// other means.
 pub struct LivereloadServer {
+    addr: SocketAddr,
     channel: Receiver<()>,
     bus: Arc<Mutex<Bus<()>>>,
 }
 
 impl LivereloadServer {
-    pub fn new(channel: Receiver<()>) -> Self {
+    pub fn new(addr: SocketAddr, channel: Receiver<()>) -> Self {
         LivereloadServer {
+            addr,
             channel,
             bus: Arc::new(Mutex::new(Bus::new(128))),
         }
@@ -37,7 +40,7 @@ impl LivereloadServer {
         let bus_clone = self.bus.clone();
         thread::Builder::new()
             .name("livereload-listener".into())
-            .spawn(move || run_listener(bus_clone))
+            .spawn(move || run_listener(self.addr, bus_clone))
             .unwrap();
 
         for _msg in self.channel {
@@ -46,8 +49,8 @@ impl LivereloadServer {
     }
 }
 
-fn run_listener(bus: Arc<Mutex<Bus<()>>>) {
-    let server = std::net::TcpListener::bind("127.0.0.1:35729").unwrap();
+fn run_listener(addr: SocketAddr, bus: Arc<Mutex<Bus<()>>>) {
+    let server = std::net::TcpListener::bind(addr).unwrap();
 
     for stream in server.incoming().filter_map(Result::ok) {
         let receiver = bus.lock().unwrap().add_rx();

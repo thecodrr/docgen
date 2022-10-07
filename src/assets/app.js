@@ -261,6 +261,32 @@ document.onkeydown = function (e) {
   }
 };
 
+document.onclick = (ev) => {
+  if (ev.target instanceof HTMLElement) {
+    const tabId = ev.target.closest(`[role="tab"]`).id;
+    if (tabId) {
+      for (const tabItem of document.querySelectorAll(
+        `.tabgroup label#${tabId}`
+      )) {
+        const tabGroup = tabItem.closest(".tabgroup");
+
+        const activeTab = tabGroup.querySelector(`label.active[role="tab"]`);
+
+        activeTab.classList.remove("active");
+        tabItem.classList.add("active");
+
+        const activeTabPanel = tabGroup.querySelector(`div.tab-panel.active`);
+        const tabPanel = tabGroup.querySelector(
+          `.tab-panel[data-tab-id="${tabId}"]`
+        );
+
+        activeTabPanel.classList.remove("active");
+        tabPanel.classList.add("active");
+      }
+    }
+  }
+};
+
 disableScrollifMenuOpen();
 dragRightMenu();
 setColor();

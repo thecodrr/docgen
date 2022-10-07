@@ -790,3 +790,43 @@ nav ul ul a {
   background-color: #f86767;
   font-weight: 500;
 }
+
+/** TABS **/
+
+ul[role="tablist"] {
+  display: flex;
+  list-style: none;
+  max-width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  margin: 0px;
+  padding: 0px;
+  margin-bottom: 20px;
+}
+
+ul[role="tablist"] li label {
+  text-decoration: none;
+  font-size: 13pt;
+  font-weight: 400;
+  color: var(--fg-dim);
+  padding: 10px 20px 10px 20px;
+  cursor: pointer;
+}
+
+ul[role="tablist"] li label:hover {
+  background-color: var(--hover-color);
+  filter: brightness(90%);
+}
+
+ul[role="tablist"] li label.active {
+  border-bottom: 3px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}

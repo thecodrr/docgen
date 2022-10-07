@@ -7,6 +7,12 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::path::{Path, PathBuf};
 
+macro_rules! html {
+    ($($arg:tt)*) => {{
+        Event::Html(CowStr::from(format!($($arg)*)))
+    }};
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Markdown {
     pub as_html: String,
@@ -19,6 +25,7 @@ pub struct Heading {
     pub title: String,
     pub anchor: String,
     pub level: u32,
+    pub is_tab: bool,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -62,6 +69,19 @@ impl Callout {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct TabGroup {
+    idx: usize,
+    tabs: Vec<Tab>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Tab {
+    id: String,
+    title: String,
+    is_active: bool,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum CalloutKind {
     Info,
     Success,
@@ -101,7 +121,7 @@ pub struct ParseOptions {
     /// Changes the root URL for any links that point to the current domain.
     pub url_root: String,
     pub link_rewrite_rules: HashMap<String, String>,
-    pub url_params: HashMap<String, String>,
+    pub url_params: Vec<(String, String)>,
 }
 
 impl Default for ParseOptions {
@@ -109,7 +129,7 @@ impl Default for ParseOptions {
         ParseOptions {
             url_root: String::from("/"),
             link_rewrite_rules: HashMap::new(),
-            url_params: HashMap::new(),
+            url_params: vec![],
         }
     }
 }
@@ -125,8 +145,10 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
     let mut headings = vec![];
     let mut links = vec![];
     let mut active_callout = None;
+    let mut active_tabgroup: Option<TabGroup> = None;
     let mut current_link = None;
     let mut current_heading: Option<Heading> = None;
+    let mut current_tab: Option<Tab> = None;
 
     let mut parser = Parser::new_ext(input, options).into_iter().peekable();
 
@@ -134,14 +156,17 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
 
     while let Some(event) = parser.next() {
         match event {
+            Event::Rule => {
+                close_tabgroup(&mut events, &mut active_tabgroup, &mut current_tab);
+            }
             // Mermaid JS code block tranformations
             Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(inner))) => {
                 let lang = inner.split(' ').next().unwrap();
 
                 if lang == "mermaid" {
-                    events.push(Event::Html(CowStr::Borrowed("<div class=\"mermaid\">\n")));
+                    events.push(html!("<div class=\"mermaid\">\n"));
                 } else if lang == "math" {
-                    events.push(Event::Html(CowStr::Borrowed("<div class=\"math\">\n")));
+                    events.push(html!("<div class=\"math\">\n"));
                 } else {
                     events.push(Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(inner))));
                 }
@@ -149,7 +174,7 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
             Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(inner))) => {
                 let lang = inner.split(' ').next().unwrap();
                 if lang == "mermaid" || lang == "math" {
-                    events.push(Event::Html(CowStr::Borrowed("</div>")));
+                    events.push(html!("</div>"));
                 } else {
                     events.push(Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(inner))));
                 }
@@ -171,32 +196,68 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
 
             // Link rewrites
             Event::Start(Tag::Link(link_type, url, title)) => {
-                let (link_type, url, title) = rewrite_link(link_type, url, title, &parse_opts);
+                let mut url_parts = url.split("/").skip(2);
+                let tab_id = url_parts.next();
 
-                let url = if !parse_opts.url_params.is_empty() && is_in_local_domain(&url) {
-                    append_parameters(url, &parse_opts)
-                } else {
-                    url
-                };
-
-                if link_type == LinkType::Inline {
-                    if let Ok(valid_url) = Url::parse(&url.clone())
-                        .map(|u| UrlType::Remote(u))
-                        .or_else(|e| match e {
-                            ParseError::EmptyHost | ParseError::RelativeUrlWithoutBase => {
-                                Ok(UrlType::Local(PathBuf::from(url.clone().into_string())))
-                            }
-                            e => Err(e),
-                        })
-                        .map_err(|l| l)
-                    {
-                        current_link = Some(Link {
-                            title: title.clone().to_string(),
-                            url: valid_url,
+                if current_heading.is_some()
+                    && link_type == LinkType::Inline
+                    && url.starts_with("#/tab/")
+                    && tab_id.is_some()
+                {
+                    let mut is_active = false;
+                    if let Some(heading) = &mut current_heading {
+                        heading.is_tab = true;
+                        if active_tabgroup.is_none() {
+                            active_tabgroup = Some(TabGroup {
+                                tabs: vec![],
+                                idx: events.len(),
+                            });
+                            events.push(html!("<div class=\"tabgroup\">"));
+                            events.push(html!("!!TABS_PLACEHOLDER!!"));
+                            is_active = true;
+                        }
+                        if current_tab.is_some() {
+                            events.push(html!("</div>"));
+                        }
+                        current_tab = Some(Tab {
+                            id: tab_id.unwrap().to_string(),
+                            title: "".to_string(),
+                            is_active,
                         });
+                        events.push(html!(
+                            "<div class=\"tab-panel {}\" data-tab-id=\"{}\">",
+                            if is_active { "active" } else { "" },
+                            tab_id.unwrap()
+                        ));
                     }
+                } else {
+                    let (link_type, url, title) = rewrite_link(link_type, url, title, &parse_opts);
+
+                    let url = if !parse_opts.url_params.is_empty() && is_in_local_domain(&url) {
+                        append_parameters(url, &parse_opts)
+                    } else {
+                        url
+                    };
+
+                    if link_type == LinkType::Inline {
+                        if let Ok(valid_url) = Url::parse(&url.clone())
+                            .map(|u| UrlType::Remote(u))
+                            .or_else(|e| match e {
+                                ParseError::EmptyHost | ParseError::RelativeUrlWithoutBase => {
+                                    Ok(UrlType::Local(PathBuf::from(url.clone().into_string())))
+                                }
+                                e => Err(e),
+                            })
+                            .map_err(|l| l)
+                        {
+                            current_link = Some(Link {
+                                title: title.clone().to_string(),
+                                url: valid_url,
+                            });
+                        }
+                    }
+                    events.push(Event::Start(Tag::Link(link_type, url, title)));
                 }
-                events.push(Event::Start(Tag::Link(link_type, url, title)));
             }
 
             Event::End(Tag::Link(link_type, url, title)) => {
@@ -217,9 +278,10 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
             // Apply heading anchor tags
             Event::Start(Tag::Heading(level @ 1..=6)) => {
                 current_heading = Some(Heading {
-                    level: level,
+                    level,
                     anchor: String::new(),
                     title: String::new(),
+                    is_tab: false,
                 });
 
                 events.push(event);
@@ -228,22 +290,48 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
             Event::End(Tag::Heading(_)) => {
                 let closed_heading = current_heading.take().unwrap();
 
-                let header_start = events
-                    .iter_mut()
-                    .rev()
-                    .find(|tag| match tag {
-                        Event::Start(Tag::Heading(_)) => true,
-                        _ => false,
-                    })
-                    .unwrap();
+                if !closed_heading.is_tab {
+                    let header_start = events
+                        .iter_mut()
+                        .rev()
+                        .find(|tag| match tag {
+                            Event::Start(Tag::Heading(_)) => true,
+                            _ => false,
+                        })
+                        .unwrap();
+                    *header_start = html!(
+                        "<h{} id=\"{}\">",
+                        closed_heading.level,
+                        closed_heading.anchor
+                    );
 
-                *header_start = Event::Html(CowStr::from(format!(
-                    "<h{} id=\"{}\">",
-                    closed_heading.level, closed_heading.anchor
-                )));
+                    if current_tab.is_none() {
+                        headings.push(closed_heading);
+                    }
+                    events.push(event);
+                } else {
+                    if let Some(tab) = &mut current_tab {
+                        tab.title = closed_heading.title
+                    }
 
-                headings.push(closed_heading);
-                events.push(event);
+                    active_tabgroup
+                        .as_mut()
+                        .unwrap()
+                        .tabs
+                        .push(current_tab.clone().unwrap());
+
+                    events.iter_mut().rev().position(|tag| match tag {
+                        Event::Start(Tag::Heading(_)) => {
+                            *tag = html!("");
+                            true
+                        }
+                        Event::Html(_) => false,
+                        _ => {
+                            *tag = html!("");
+                            false
+                        }
+                    });
+                }
             }
 
             Event::Start(Tag::Paragraph) => {
@@ -296,7 +384,7 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
                     if Some(&Event::End(Tag::Paragraph)) != events.last() {
                         events.push(Event::End(Tag::Paragraph));
                     }
-                    events.push(Event::Html(CowStr::from(format!("</div>"))));
+                    events.push(html!("</div>"));
                     if Some(&Event::SoftBreak) == parser.peek() {
                         events.push(Event::Start(Tag::Paragraph));
                     }
@@ -305,15 +393,13 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
                         active_callout = Some(callout.clone());
 
                         if let Some(title) = callout.title {
-                            events.push(Event::Html(CowStr::from(format!(
+                            events.push(html!(
                                 "<div class=\"callout {}\"><p class=\"callout-title\">{}</p>",
-                                callout.kind, title
-                            ))));
+                                callout.kind,
+                                title
+                            ));
                         } else {
-                            events.push(Event::Html(CowStr::from(format!(
-                                "<div class=\"callout {}\">",
-                                callout.kind
-                            ))));
+                            events.push(html!("<div class=\"callout {}\">", callout.kind));
                         }
                     } else {
                         events.push(Event::Text(text.into()));
@@ -327,6 +413,8 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
             _ => events.push(event),
         };
     }
+
+    close_tabgroup(&mut events, &mut active_tabgroup, &mut current_tab);
 
     // Write to String buffer.
     let mut as_html = String::new();
@@ -343,9 +431,18 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
     allowed_div_classes.insert("success");
     allowed_div_classes.insert("warning");
     allowed_div_classes.insert("error");
+    // Tabs specific
+    allowed_div_classes.insert("tabgroup");
+    allowed_div_classes.insert("tab");
+    allowed_div_classes.insert("tab-panel");
+    allowed_div_classes.insert("active");
+
+    let mut allowed_label_classes = HashSet::new();
+    allowed_label_classes.insert("active");
 
     let mut allowed_classes = HashMap::new();
     allowed_classes.insert("div", allowed_div_classes);
+    allowed_classes.insert("label", allowed_label_classes);
 
     let safe_html = ammonia::Builder::new()
         .link_rel(None)
@@ -365,11 +462,16 @@ pub fn parse(input: &str, opts: Option<ParseOptions>) -> Markdown {
         .add_tag_attributes("code", &["class"])
         .add_tags(&["p"])
         .add_tag_attributes("p", &["class"])
+        .add_tags(&["label"])
+        .add_tag_attributes("label", &["id", "role"])
         .add_tags(&["input"])
         .add_tag_attribute_values("input", "disabled", &[""])
         .add_tag_attribute_values("input", "type", &["checkbox"])
         .add_tag_attribute_values("input", "checked", &[""])
         .allowed_classes(allowed_classes)
+        .add_tag_attributes("div", &["id", "data-tab-title", "data-tab-id"])
+        .add_tag_attributes("ul", &["role"])
+        .add_tag_attributes("li", &["role"])
         .add_clean_content_tags(&["form", "script", "style"])
         .clean(&*as_html)
         .to_string();
@@ -426,6 +528,45 @@ fn append_parameters<'a>(url: CowStr<'a>, parse_opts: &'a ParseOptions) -> CowSt
     appended.into()
 }
 
+fn close_tabgroup(events: &mut Vec<Event>, tabgroup: &mut Option<TabGroup>, tab: &mut Option<Tab>) {
+    if let Some(group) = tabgroup {
+        if tab.is_some() {
+            events.push(html!("</div>"));
+        }
+
+        let idx = group.idx + 1;
+        let mut tablist = Vec::new();
+
+        tablist.push(html!("<ul class=\"tab-list\" role=\"tablist\">"));
+        group.tabs.iter().for_each(|tab| {
+            tablist.push(html!("<li class= role=\"presentation\">"));
+            tablist.push(html!(
+                "<label class=\"{}\" id=\"{}\" title=\"{}\" role=\"tab\">{}</a>",
+                if tab.is_active { "active" } else { "" },
+                tab.id,
+                tab.title,
+                tab.title
+            ));
+            tablist.push(html!("</li>"));
+        });
+        tablist.push(html!("</ul>"));
+
+        events.splice(idx..idx + 1, tablist);
+
+        *tabgroup = None;
+        *tab = None;
+        events.push(html!("</div>"));
+    }
+}
+
+// fn generate_tabgroup_id() -> String {
+//     thread_rng()
+//         .sample_iter(&Alphanumeric)
+//         .take(30)
+//         .map(char::from)
+//         .collect()
+// }
+
 fn is_in_local_domain(url_string: &str) -> bool {
     match Url::parse(url_string) {
         Ok(url) => url.host().is_none(),
@@ -450,7 +591,7 @@ fn is_callout_end(text: &str) -> bool {
 }
 
 fn is_callout_close_event(event: Option<&Event>) -> bool {
-    event == Some(&Event::Html(CowStr::from(format!("</div>"))))
+    event == Some(&html!("</div>"))
 }
 
 fn parse_callout(text: &str) -> Option<Callout> {
@@ -498,785 +639,4 @@ fn convert_emojis(input: &str) -> String {
     }
 
     acc
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn parses_a_markdown_doc() {
-        let input = indoc! {"
-        # My heading
-
-        Some content
-
-        ## Some other heading
-        "};
-
-        let Markdown {
-            as_html,
-            headings,
-            links: _,
-        } = parse(&input, None);
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <h1 id=\"my-heading\">My heading</h1>
-                <p>Some content</p>
-                <h2 id=\"some-other-heading\">Some other heading</h2>
-            "}
-        );
-
-        assert_eq!(
-            headings,
-            vec![
-                Heading {
-                    title: "My heading".to_string(),
-                    anchor: "my-heading".to_string(),
-                    level: 1,
-                },
-                Heading {
-                    title: "Some other heading".to_string(),
-                    anchor: "some-other-heading".to_string(),
-                    level: 2,
-                }
-            ]
-        );
-    }
-
-    #[test]
-    fn optionally_rewrites_link_root_path() {
-        let input = indoc! {"
-        [an link](/foo/bar)
-        "};
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, None);
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"/foo/bar\">an link</a></p>
-            "}
-        );
-
-        let mut options = ParseOptions::default();
-        options.url_root = "/other/root".to_owned();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"/other/root/foo/bar\">an link</a></p>
-            "}
-        );
-    }
-
-    #[test]
-    fn does_not_rewrite_non_absolute_urls() {
-        let input = indoc! {"
-        [an link](https://www.google.com)
-        "};
-
-        let mut options = ParseOptions::default();
-        options.url_root = "/other/root".to_owned();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"https://www.google.com\">an link</a></p>
-            "}
-        );
-
-        let input = indoc! {"
-        [an link](relative/link)
-        "};
-
-        let mut options = ParseOptions::default();
-        options.url_root = "/other/root".to_owned();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"relative/link\">an link</a></p>
-            "}
-        );
-    }
-
-    #[test]
-    fn rewrites_any_image_that_has_an_explicit_rewrite_mapping() {
-        let input = indoc! {"
-        ![an image](/assets/cat.jpg)
-        "};
-
-        let mut options = ParseOptions::default();
-
-        options.link_rewrite_rules.insert(
-            "/assets/cat.jpg".to_owned(),
-            "https://example.com/cat.jpg".to_owned(),
-        );
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><img src=\"https://example.com/cat.jpg\" alt=\"an image\"></p>
-            "}
-        );
-    }
-
-    #[test]
-    fn rewrites_any_link_that_has_an_explicit_rewrite_mapping() {
-        let input = indoc! {"
-        [an document](/assets/plans.pdf)
-        "};
-
-        let mut options = ParseOptions::default();
-
-        options.link_rewrite_rules.insert(
-            "/assets/plans.pdf".to_owned(),
-            "https://example.com/plans.pdf".to_owned(),
-        );
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"https://example.com/plans.pdf\">an document</a></p>
-            "}
-        );
-    }
-
-    #[test]
-    fn appends_parameters_to_the_end_of_urls() {
-        let input = indoc! {"
-        [an link](relative/link)
-        "};
-
-        let mut options = ParseOptions::default();
-
-        options
-            .url_params
-            .insert("base".to_owned(), "123".to_owned());
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"relative/link?base=123\">an link</a></p>
-            "}
-        );
-    }
-
-    #[test]
-    fn appends_multiple_parameters_to_the_end_of_urls() {
-        let input = indoc! {"
-        [an link](relative/link)
-        "};
-
-        let mut options = ParseOptions::default();
-
-        options
-            .url_params
-            .insert("bases".to_owned(), "are".to_owned());
-        options
-            .url_params
-            .insert("belong".to_owned(), "tous".to_owned());
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert!(as_html.contains("bases=are"));
-        assert!(as_html.contains("belong=tous"));
-        assert!(as_html.contains("&amp;"));
-    }
-
-    #[test]
-    fn appends_multiple_parameters_to_the_end_of_absolute_urls() {
-        let input = indoc! {"
-        [an link](/absolute/link)
-        "};
-
-        let mut options = ParseOptions::default();
-
-        options
-            .url_params
-            .insert("base".to_owned(), "123".to_owned());
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"/absolute/link?base=123\">an link</a></p>
-            "}
-        );
-    }
-
-    #[test]
-    fn does_not_append_params_to_urls_with_a_specific_domain() {
-        let input = indoc! {"
-        [an link](http://www.example.com/)
-        "};
-
-        let mut options = ParseOptions::default();
-
-        options
-            .url_params
-            .insert("bases".to_owned(), "are".to_owned());
-        options
-            .url_params
-            .insert("belong".to_owned(), "tous".to_owned());
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-                <p><a href=\"http://www.example.com/\">an link</a></p>
-            "}
-        );
-    }
-
-    #[test]
-    fn sanitizes_input() {
-        let input = indoc! {"
-        <script>
-        alert('I break you');
-        </script>
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(as_html, "\n");
-    }
-
-    #[test]
-    fn allows_mermaid_blocks() {
-        let input = indoc! {"
-        ```mermaid
-        graph TD;
-            A-->B;
-            A-->C;
-        ```
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-        <div class=\"mermaid\">
-        graph TD;
-            A--&gt;B;
-            A--&gt;C;
-        </div>"}
-        );
-    }
-
-    #[test]
-    fn allows_code_blocks() {
-        let input = indoc! {"
-        ```ruby
-        1 + 1
-        ```
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            as_html,
-            indoc! {"
-        <pre><code class=\"language-ruby\">1 + 1
-        </code></pre>
- "}
-        );
-    }
-
-    #[test]
-    fn gathers_a_list_of_links_on_the_page() {
-        let input = indoc! {"
-        [foo](/bar)
-
-        [Example](https://www.example.com)
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html: _as_html,
-            headings: _headings,
-            links,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            links,
-            vec![
-                Link {
-                    title: "foo".to_string(),
-                    url: UrlType::Local("/bar".into())
-                },
-                Link {
-                    title: "Example".to_string(),
-                    url: UrlType::Remote(Url::parse("https://www.example.com").unwrap())
-                }
-            ]
-        );
-    }
-
-    #[test]
-    fn gathers_the_internal_text_of_a_link() {
-        let input = indoc! {"
-        [**BOLD**](/bar)
-        [![AltText](/src/foo)](/bar)
-        ## [AnHeader](/bar)
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html: _as_html,
-            headings: _headings,
-            links,
-        } = parse(&input, Some(options));
-
-        assert_eq!(
-            links,
-            vec![
-                Link {
-                    title: "BOLD".to_string(),
-                    url: UrlType::Local("/bar".into())
-                },
-                Link {
-                    title: "AltText".to_string(),
-                    url: UrlType::Local("/bar".into())
-                },
-                Link {
-                    title: "AnHeader".to_string(),
-                    url: UrlType::Local("/bar".into())
-                }
-            ]
-        );
-    }
-
-    #[test]
-    fn detects_emojis() {
-        let input = indoc! {"
-        I am :grinning:.
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        assert_eq!(as_html, "<p>I am 😀.</p>\n");
-    }
-
-    #[test]
-    fn detects_emojis_in_links() {
-        let input = indoc! {"
-        [:grinning:](/foo)
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        assert_eq!(as_html, "<p><a href=\"/foo\">😀</a></p>\n");
-    }
-
-    #[test]
-    fn leaves_the_emoji_identifier_alone_if_it_is_not_recognised() {
-        let input = indoc! {"
-        Look at this :idonotexist:
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        assert_eq!(as_html, "<p>Look at this :idonotexist:</p>\n");
-    }
-
-    #[test]
-    fn ignores_identifiers_that_do_not_end() {
-        let input = indoc! {"
-        Look at this :stop
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        assert_eq!(as_html, "<p>Look at this :stop</p>\n");
-    }
-
-    #[test]
-    fn ignores_identifiers_that_do_not_end_with_whitespace() {
-        let input = indoc! {"
-        Look at this :stop MORE
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        assert_eq!(as_html, "<p>Look at this :stop MORE</p>\n");
-    }
-
-    fn assert_matches(actual: &str, expected: &str) {
-        if actual.trim().replace("\n", "").replace(" ", "")
-            != expected.trim().replace("\n", "").replace(" ", "")
-        {
-            assert!(
-                false,
-                "Expected and actual did not match:\n == ACTUAL ==============\n{}\n == EXPECTED ============\n{}",
-                actual,
-                expected)
-        }
-    }
-
-    #[test]
-    fn supports_callout_blocks() {
-        let kinds = [
-            ("info", "info"),
-            ("notice", "info"),
-            ("success", "success"),
-            ("warn", "warning"),
-            ("warning", "warning"),
-            ("error", "error"),
-        ];
-
-        for (kind, css) in kinds {
-            let input = formatdoc! {"
-        {{% {} An Note %}}
-
-        The content
-
-        More content
-
-        {{% end %}}
-        ", kind};
-
-            let options = ParseOptions::default();
-
-            let Markdown {
-                as_html,
-                headings: _headings,
-                links: _links,
-            } = parse(&input, Some(options));
-
-            let expected = formatdoc! {"
-        <div class=\"callout {}\"><p class=\"callout-title\">An Note</p>
-        <p>The content</p>
-        <p>More content</p>
-        </div>", css};
-
-            assert_eq!(as_html, expected);
-        }
-    }
-
-    #[test]
-    fn callouts_dont_need_space_after_starting() {
-        let input = indoc! {"
-        {% warning An Note %}
-        The content
-        {% end %}
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        let expected = indoc! {"
-        <div class=\"callout warning\"><p class=\"callout-title\">An Note</p>
-        <p>The content
-        </p></div>"};
-
-        assert_matches(&as_html, &expected);
-    }
-
-    #[test]
-    fn callouts_can_have_stuff_after_it() {
-        let input = indoc! {"
-        {% warning An Note %}
-        The content
-        {% end %}
-
-        Moar
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        let expected = indoc! {"
-        <div class=\"callout warning\">
-            <p class=\"callout-title\">An Note</p>
-            <p>The content</p>
-        </div>
-        <p>Moar</p>
-        "};
-
-        assert_matches(&as_html, &expected);
-    }
-
-    #[test]
-    fn callouts_cannot_be_nested() {
-        let input = indoc! {"
-        {% warning An Warning %}
-        {% info An Info %}
-        The content
-        {% end %}
-        More content
-        {% end %}
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        let expected = indoc! {"
-        <div class=\"callout warning\">
-            <p class=\"callout-title\">An Warning</p>
-            <p>
-                {% info An Info %}
-                The content
-            </p>
-        </div>
-        <p>
-            More content
-            {% end %}
-        </p>"
-        };
-
-        assert_matches(&as_html, &expected);
-    }
-
-    #[test]
-    fn callouts_can_contain_images() {
-        let input = indoc! {"
-        {% info An Info %}
-        ![an pic](/cat.jpg)
-        {% end %}
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        let expected = indoc! {"
-        <div class=\"callout info\">
-            <p class=\"callout-title\">An Info</p>
-            <p><img src=\"/cat.jpg\" alt=\"an pic\"></p>
-        </div>"};
-
-        assert_matches(&as_html, &expected);
-    }
-
-    #[test]
-    fn supports_github_style_markdown_checkboxes() {
-        let input = indoc! {"
-        * [ ] Incomplete
-        * [x] Complete
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        let expected = indoc! {"
-        <ul>
-            <li>
-                <input disabled=\"\" type=\"checkbox\">
-                Incomplete
-            </li>
-            <li>
-                <input disabled=\"\" type=\"checkbox\" checked=\"\">
-                Complete
-            </li>
-        </ul>
-
-        "};
-
-        assert_matches(&as_html, &expected);
-    }
-
-    #[test]
-    fn does_not_allow_random_forms() {
-        let input = indoc! {"
-        <form>
-          <label for=\"ufname\">First name:</label><br>
-          <input type=\"text\" id=\"fname\" name=\"fname\"><br>
-          <label for=\"lname\">Last name:</label><br>
-          <input type=\"text\" id=\"lname\" name=\"lname\">
-        </form>
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        let expected = "";
-
-        assert_matches(&as_html, &expected);
-    }
-
-    #[test]
-    fn it_detects_math_blocks() {
-        let input = indoc! {"
-        ```math
-        % \\f is defined as #1f(#2) using the macro
-        \\f\\relax{x} = \\int_{-\\infty}^\\infty
-            \\f\\hat\\xi\\,e^{2 \\pi i \\xi x}
-            \\,d\\xi
-        ```
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html,
-            headings: _headings,
-            links: _links,
-        } = parse(&input, Some(options));
-
-        // Not a regular language block
-        assert!(as_html.contains("class=\"math\""));
-        // Contains the contents of the match block
-        assert!(as_html.contains("f is defined as"));
-    }
-
-    #[test]
-    fn code_blocks_in_headings_included_in_heading_titles() {
-        // https://github.com/Doctave/doctave/issues/15
-        let input = indoc! {"
-        # Foo `bar` baz
-        "};
-
-        let options = ParseOptions::default();
-
-        let Markdown {
-            as_html: _as_html,
-            links: _links,
-            headings,
-        } = parse(&input, Some(options));
-
-        let link = headings.get(0).unwrap();
-
-        assert!(
-            link.title == "Foo bar baz",
-            "Incorrect title. Expected \"Foo bar baz\", got \"{}\"",
-            link.title
-        );
-    }
 }

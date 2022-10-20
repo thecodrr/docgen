@@ -3,8 +3,8 @@ source: tests/markdown_tests.rs
 description: sanitizes_input
 info: "<script>\nalert('I break you');\n</script>"
 ---
-Markdown {
-    as_html: "",
+ParsedMarkdown {
+    html: "",
     headings: [],
     links: [],
 }

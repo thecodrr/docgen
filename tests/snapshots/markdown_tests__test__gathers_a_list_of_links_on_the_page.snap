@@ -3,8 +3,8 @@ source: tests/markdown_tests.rs
 description: gathers_a_list_of_links_on_the_page
 info: "[foo](/bar)\n[Example](https://www.example.com)\n[Example 2](https://www.example2.com)"
 ---
-Markdown {
-    as_html: "<p><a href=\"/bar\">foo</a>\n<a href=\"https://www.example.com\">Example</a>\n<a href=\"https://www.example2.com\">Example 2</a></p>\n",
+ParsedMarkdown {
+    html: "<p><a href=\"/bar\">foo</a>\n<a href=\"https://www.example.com\">Example</a>\n<a href=\"https://www.example2.com\">Example 2</a></p>\n",
     headings: [],
     links: [
         Link {

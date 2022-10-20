@@ -3,8 +3,8 @@ source: tests/markdown_tests.rs
 description: appends_multiple_parameters_to_the_end_of_urls
 info: "\n[an link](relative/link)\n"
 ---
-Markdown {
-    as_html: "<p><a href=\"relative/link?bases=are&amp;belong=tous\">an link</a></p>\n",
+ParsedMarkdown {
+    html: "<p><a href=\"relative/link?bases=are&amp;belong=tous\">an link</a></p>\n",
     headings: [],
     links: [
         Link {

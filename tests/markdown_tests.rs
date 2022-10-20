@@ -1,4 +1,4 @@
-use docgen::docgen_markdown::*;
+use docgen::markdown::parser::{MarkdownParser, ParseOptions};
 use insta::*;
 
 #[macro_use]
@@ -21,7 +21,9 @@ mod test {
                     info => &input,
                     omit_expression => true // do not include the default expression
                 }, {
-                    assert_debug_snapshot!(parse(&input, Some(options)));
+
+                    let mut parser = MarkdownParser::new(Some(options));
+                    assert_debug_snapshot!(parser.parse(&input));
                 });
             }
         };
@@ -154,8 +156,11 @@ mod test {
 
     snapshot_test!(
         allows_code_blocks,
-        " ```ruby
+        "```ruby
         1 + 1
+        something else
+        something else too
+        another something else
         ```",
         |_| {}
     );
@@ -277,21 +282,18 @@ mod test {
     );
 
     snapshot_test!(
-        callouts_dont_need_space_after_starting,
-        "
-        {% warning An Note %}
-        The content
-        {% end %}
-        ",
+        callout_title_is_optional,
+        "> warning
+        > 
+        > The content",
         |_| {}
     );
 
     snapshot_test!(
         callouts_can_have_stuff_after_it,
-        "
-        {% warning An Note %}
-        The content
-        {% end %}
+        "> warning An Note
+        > 
+        > The content
 
         Moar
         ",
@@ -299,25 +301,16 @@ mod test {
     );
 
     snapshot_test!(
-        callouts_cannot_be_nested,
-        "
-        {% warning An Warning %}
-        {% info An Info %}
-        The content
-        {% end %}
-        More content
-        {% end %}
-        ",
+        callouts_can_contain_images,
+        "> info An Info
+        >
+        > ![an pic](/cat.jpg)",
         |_| {}
     );
 
     snapshot_test!(
-        callouts_can_contain_images,
-        "
-        {% info An Info %}
-        ![an pic](/cat.jpg)
-        {% end %}
-        ",
+        blockquotes_are_not_confused_with_callouts,
+        "> I am here!",
         |_| {}
     );
 
@@ -360,17 +353,54 @@ mod test {
         |_| {}
     );
 
+    // snapshot_test!(
+    //     supports_markdown_source_embeds,
+    // "I was working but I couldn't.
+
+    // # Heading in main file
+
+    // ![](/embed/file.md)
+
+    // And some more content here.",
+    //     |options: &mut ParseOptions| {
+    // options.resolve_embeds = Some(Box::new(|url: String| match url.as_str() {
+    //     "/embed/file.md" => Some("# Heading from another file".to_string()),
+    //     _ => None,
+    // }));
+    //     }
+    // );
+
+    // #[test]
+    // fn supports_markdown_source_embeds() {
+    //     let input = indoc!(
+    //         "I was working but I couldn't.
+
+    //     # Heading in main file
+
+    //     [embed ./html/hello.md](./html/hello.md)
+
+    //     And some more content here."
+    //     );
+
+    //     insta::with_settings!({
+    //         description => "Supports callout blocks",
+    //         info => &input,
+    //         omit_expression => true // do not include the default expression
+    //     }, {
+    //         let mut parser = MarkdownParser::new(None);
+    //         assert_debug_snapshot!(parser.parse(&input));
+    //     });
+    // }
+
     #[test]
     fn supports_callout_blocks() {
         let binding = ["info", "notice", "success", "warn", "warning", "error"]
             .map(|kind| {
-                formatdoc! {"{{% {} An Note %}}
-
-                The content
-
-                More content
-
-                {{% end %}}", kind}
+                formatdoc! {"> {} An Note
+                >
+                > The content
+                >
+                > More content", kind}
             })
             .join("\n\n---\n\n");
 
@@ -381,7 +411,8 @@ mod test {
             info => &input,
             omit_expression => true // do not include the default expression
         }, {
-            assert_debug_snapshot!(parse(&input, None));
+            let mut parser = MarkdownParser::new(None);
+            assert_debug_snapshot!(parser.parse(&input));
         });
     }
 }

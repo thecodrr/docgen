@@ -3,14 +3,13 @@ source: tests/markdown_tests.rs
 description: inline_code_in_headings_is_included_in_heading_titles
 info: "# Foo `bar` baz\n        "
 ---
-Markdown {
-    as_html: "<h1 id=\"foo-bar-baz\">Foo <code>bar</code> baz</h1>\n",
+ParsedMarkdown {
+    html: "<h1 id=\"foo-bar-baz\">Foo <code>bar</code> baz</h1>\n\n",
     headings: [
         Heading {
             title: "Foo bar baz",
             anchor: "foo-bar-baz",
             level: 1,
-            is_tab: false,
         },
     ],
     links: [],

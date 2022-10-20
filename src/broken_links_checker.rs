@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::docgen_markdown;
+use crate::markdown::extensions::link_rewriter::{Link, UrlType};
 use crate::preview_server::resolve_file;
 use crate::site::{Site, SiteBackend};
 use crate::Directory;
@@ -21,14 +21,14 @@ pub fn run<B: SiteBackend>(site: &Site<B>) -> Result<()> {
 fn find_broken_links<B: SiteBackend>(
     dir: &Directory,
     site: &Site<B>,
-    broken_links: &mut Vec<(PathBuf, docgen_markdown::Link)>,
+    broken_links: &mut Vec<(PathBuf, Link)>,
     config: &Config,
 ) {
     for doc in &dir.docs {
         for link in doc.outgoing_links() {
             match &link.url {
-                docgen_markdown::UrlType::Remote(_) => {}
-                docgen_markdown::UrlType::Local(path) => {
+                UrlType::Remote(_) => {}
+                UrlType::Local(path) => {
                     if !matches_a_target(&path, site) {
                         broken_links.push((doc.original_path().to_owned(), link.clone()))
                     }

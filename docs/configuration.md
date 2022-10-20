@@ -10,10 +10,9 @@ This document goes through all the different configuration options available.
 
 First, let's look at the options available in the `docgen.yaml` file.
 
-{% info :warning: Remember to restart %}
-Any changes you make to this file will only come into effect when you restart the preview
-server, or rebuild your site.
-{% end %}
+> info :warning: Remember to restart
+>
+> Any changes you make to this file will only come into effect when you restart the preview server, or rebuild your site.
 
 ### title
 

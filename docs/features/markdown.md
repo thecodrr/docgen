@@ -76,10 +76,10 @@ Both **bold**, _italics_, and ~~strikethrough~~ are supported.
 ## Images
 
 ```
-![A random image](https://picsum.photos/600/400)
+![A random image](https://random.imagecdn.app/600/400)
 ```
 
-![A random image](https://picsum.photos/600/400)
+![A random image](https://random.imagecdn.app/600/400)
 
 ## Emojis
 
@@ -88,9 +88,9 @@ You can use [GitHub style shortcodes](https://emojipedia.org/shortcodes/) for em
 This means you can write `:bell:` and Docgen will render is as :bell:. These work particularly well
 with callouts (see below):
 
-{% info :zap:  I want your attention %}
-This is important!
-{% end %}
+> info :zap: I want your attention
+>
+> This is important!
 
 ## Callouts
 
@@ -99,58 +99,50 @@ You can bring attention to sections using callouts.
 ### Basic usage
 
 ```
-{% info This is the title %}
-
-And this is the content!
-
-So much space for activities!
-
-{% end %}
+> info This is the title
+>
+> And this is the content!
+>
+> So much space for activities!
 ```
 
 Gives you:
 
-{% info This is the title %}
-
-And this is the content!
-
-So much space for activities!
-
-{% end %}
+> info This is the title
+>
+> And this is the content!
+>
+> So much space for activities!
 
 ### Without a title
 
 ```
-{% info %}
-
-You can skip the title
-
-{% end %}
+> info
+>
+> You can skip the title
 ```
 
 Gives you:
 
-{% info %}
-
-You can skip the title
-
-{% end %}
+> info
+>
+> You can skip the title
 
 ### Types
 
 Instead of `info`, you can use `success`, `warning`, or `error` for different colored callouts:
 
-{% success A success message %}
-This is positive news
-{% end %}
+> success A success message
+>
+> This is positive news
 
-{% warning A warning message %}
-You should use caution
-{% end %}
+> warning A warning message
+>
+> You should use caution
 
-{% error An error message %}
-Something went wrong
-{% end %}
+> error An error message
+>
+> Something went wrong
 
 ## Quotes
 

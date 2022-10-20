@@ -1,0 +1,10 @@
+---
+source: tests/markdown_tests.rs
+description: blockquotes_are_not_confused_with_callouts
+info: "> I am here!"
+---
+ParsedMarkdown {
+    html: "<blockquote>\n<p>I am here!</p>\n</blockquote>\n",
+    headings: [],
+    links: [],
+}

@@ -1,0 +1,10 @@
+---
+source: tests/markdown_tests.rs
+description: callout_title_is_optional
+info: "> warning\n> \n> The content"
+---
+ParsedMarkdown {
+    html: "<div class=\"callout warning\">\n<p>The content</p>\n</div>",
+    headings: [],
+    links: [],
+}

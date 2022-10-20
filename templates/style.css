@@ -830,3 +830,11 @@ ul[role="tablist"] li label.active {
 .tab-panel.active {
   display: block;
 }
+
+/** TASK LIST **/
+
+ul:has(input[type="checkbox"]) {
+  margin: 0px;
+  padding: 0px;
+  list-style-type: none;
+}

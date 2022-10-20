@@ -142,13 +142,13 @@ function setColor() {
   var color = localStorage.getItem("docgen-color");
 
   if (color === "dark") {
-    document.querySelector("link[rel='stylesheet'][href*='prism-']").href =
-      BASE_PATH + "assets/prism-atom-dark.css?v=" + DOCGEN_TIMESTAMP;
+    document.querySelector("link[rel='stylesheet'][href*='syntect-']").href =
+      BASE_PATH + "assets/syntect-theme-dark.css?v=" + DOCGEN_TIMESTAMP;
     document.getElementsByTagName("html")[0].classList.remove("light");
     document.getElementsByTagName("html")[0].classList.add("dark");
   } else {
-    document.querySelector("link[rel='stylesheet'][href*='prism-']").href =
-      BASE_PATH + "assets/prism-ghcolors.css?" + DOCGEN_TIMESTAMP;
+    document.querySelector("link[rel='stylesheet'][href*='syntect-']").href =
+      BASE_PATH + "assets/syntect-theme-light.css?" + DOCGEN_TIMESTAMP;
     document.getElementsByTagName("html")[0].classList.remove("dark");
     document.getElementsByTagName("html")[0].classList.add("light");
   }
@@ -203,7 +203,7 @@ for (let element of mathElements) {
 }
 
 // Setup Prism
-Prism.plugins.autoloader.languages_path = BASE_PATH + "assets/prism-grammars/";
+// Prism.plugins.autoloader.languages_path = BASE_PATH + "assets/prism-grammars/";
 
 // Load search index
 var INDEX;

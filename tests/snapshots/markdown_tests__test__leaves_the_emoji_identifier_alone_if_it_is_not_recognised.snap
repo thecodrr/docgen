@@ -3,8 +3,8 @@ source: tests/markdown_tests.rs
 description: leaves_the_emoji_identifier_alone_if_it_is_not_recognised
 info: "Look at this :idonotexist:"
 ---
-Markdown {
-    as_html: "<p>Look at this :idonotexist:</p>\n",
+ParsedMarkdown {
+    html: "<p>Look at this :idonotexist:</p>\n",
     headings: [],
     links: [],
 }

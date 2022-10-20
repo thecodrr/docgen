@@ -3,8 +3,8 @@ source: tests/markdown_tests.rs
 description: rewrites_any_image_that_has_an_explicit_rewrite_mapping
 info: "\n![an image](/assets/cat.jpg)\n"
 ---
-Markdown {
-    as_html: "<p><img src=\"https://example.com/cat.jpg\" alt=\"an image\"></p>\n",
+ParsedMarkdown {
+    html: "<p><img src=\"https://example.com/cat.jpg\" alt=\"an image\"></p>\n",
     headings: [],
     links: [],
 }

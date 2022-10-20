@@ -1,10 +1,10 @@
 ---
 source: tests/markdown_tests.rs
 description: callouts_can_have_stuff_after_it
-info: "{% warning An Note %}\nThe content\n{% end %}\n\nMoar\n"
+info: "> warning An Note\n> \n> The content\n\nMoar\n"
 ---
-Markdown {
-    as_html: "<div class=\"callout warning\"><p class=\"callout-title\">An Note</p>\n<p>\nThe content\n</p>\n</div>\n<p>Moar</p>\n",
+ParsedMarkdown {
+    html: "<div class=\"callout warning\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n</div>\n<p>Moar</p>\n",
     headings: [],
     links: [],
 }

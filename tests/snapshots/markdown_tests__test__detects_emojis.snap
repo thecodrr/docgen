@@ -3,8 +3,8 @@ source: tests/markdown_tests.rs
 description: detects_emojis
 info: "I am :grinning:."
 ---
-Markdown {
-    as_html: "<p>I am 😀.</p>\n",
+ParsedMarkdown {
+    html: "<p>I am 😀.</p>\n",
     headings: [],
     links: [],
 }

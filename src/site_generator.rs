@@ -6,6 +6,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use elasticlunr::Index;
 use rayon::prelude::*;
 use serde::Serialize;
+use syntect::highlighting::ThemeSet;
+use syntect::html::{css_for_theme_with_class_style, ClassStyle};
 use walkdir::WalkDir;
 
 use crate::config::Config;
@@ -92,6 +94,16 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
 
     /// Builds fixed assets required by Docgen
     fn build_assets(&self) -> Result<()> {
+        let ts = ThemeSet::load_defaults();
+
+        // create dark color scheme css
+        let dark_theme =
+            css_for_theme_with_class_style(&ts.themes["Solarized (dark)"], ClassStyle::Spaced)
+                .unwrap();
+        let light_theme =
+            css_for_theme_with_class_style(&ts.themes["InspiredGitHub"], ClassStyle::Spaced)
+                .unwrap();
+
         // Add JS
         self.site
             .add_file(
@@ -114,12 +126,6 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                 )
                 .map_err(|e| Error::io(e, "Could not write livereload.js to assets directory"))?;
         }
-        self.site
-            .add_file(
-                &self.config.out_dir().join("assets").join("prism.js"),
-                crate::PRISM_JS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write prism.js to assets directory"))?;
         self.site
             .add_file(
                 &self.config.out_dir().join("assets").join("katex.js"),
@@ -152,46 +158,6 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                 .map_err(|e| Error::io(e, "Could not write katex fonts to assets directory"))?;
         }
 
-        // Add prism grammars
-        for font in crate::PRISM_GRAMMARS
-            .entries()
-            .iter()
-            .filter_map(|f| f.as_file())
-        {
-            self.site
-                .add_file(
-                    &self
-                        .config
-                        .out_dir()
-                        .join("assets")
-                        .join("prism-grammars")
-                        .join(font.path().file_name().unwrap()),
-                    Vec::from(font.contents()),
-                )
-                .map_err(|e| Error::io(e, "Could not write prism grammars to assets directory"))?;
-        }
-
-        // Add styles
-        self.site
-            .add_file(
-                &self
-                    .config
-                    .out_dir()
-                    .join("assets")
-                    .join("prism-atom-dark.css"),
-                crate::ATOM_DARK_CSS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write prism-atom-dark.css to assets directory"))?;
-        self.site
-            .add_file(
-                &self
-                    .config
-                    .out_dir()
-                    .join("assets")
-                    .join("prism-ghcolors.css"),
-                crate::GH_COLORS_CSS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write prism-ghcolors.css to assets directory"))?;
         self.site
             .add_file(
                 &self.config.out_dir().join("assets").join("normalize.css"),
@@ -204,6 +170,38 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                 crate::KATEX_CSS.into(),
             )
             .map_err(|e| Error::io(e, "Could not write prism-atom-dark.css to assets directory"))?;
+
+        self.site
+            .add_file(
+                &self
+                    .config
+                    .out_dir()
+                    .join("assets")
+                    .join("syntect-theme-light.css"),
+                light_theme.into(),
+            )
+            .map_err(|e| {
+                Error::io(
+                    e,
+                    "Could not write syntect-theme-light.css to assets directory",
+                )
+            })?;
+
+        self.site
+            .add_file(
+                &self
+                    .config
+                    .out_dir()
+                    .join("assets")
+                    .join("syntect-theme-dark.css"),
+                dark_theme.into(),
+            )
+            .map_err(|e| {
+                Error::io(
+                    e,
+                    "Could not write syntect-theme-dark.css to assets directory",
+                )
+            })?;
 
         let mut data = serde_json::Map::new();
         data.insert(

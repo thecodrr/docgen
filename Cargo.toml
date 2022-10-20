@@ -37,6 +37,11 @@ url = "2.2.1"
 emojis = "0.1.2"
 regex = "1"
 port_scanner = "0.1.5"
+slug = "0.1.4"
+syntect = { version = "5.0.0", default-features = false, features = [
+    "default-fancy",
+] }
+
 
 [dev-dependencies]
 indoc = "1.0.2"

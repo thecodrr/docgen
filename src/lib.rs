@@ -10,12 +10,12 @@ pub mod address;
 mod broken_links_checker;
 mod build;
 pub mod config;
-pub mod docgen_markdown;
 mod docs_finder;
 mod error;
 mod frontmatter;
 mod init;
 mod livereload_server;
+pub mod markdown;
 mod navigation;
 mod preview_server;
 #[allow(dead_code, unused_variables)]
@@ -33,10 +33,11 @@ pub use build::BuildCommand;
 pub use config::Config;
 pub use error::Error;
 pub use init::InitCommand;
+use markdown::extensions::toc::Heading;
+use markdown::parser::{MarkdownParser, ParseOptions, ParsedMarkdown};
 pub use serve::{ServeCommand, ServeOptions};
 pub use site::BuildMode;
 
-pub use docgen_markdown::{Heading, Markdown};
 use handlebars::Handlebars;
 use include_dir::{include_dir, Dir};
 use navigation::Link;
@@ -45,16 +46,12 @@ static APP_JS: &str = include_str!("assets/app.js");
 static MERMAID_JS: &str = include_str!("assets/mermaid.min.js");
 static ELASTIC_LUNR: &str = include_str!("assets/elasticlunr.min.js");
 static LIVERELOAD_JS: &str = include_str!("assets/livereload.min.js");
-static PRISM_JS: &str = include_str!("assets/prism.min.js");
 static KATEX_JS: &str = include_str!("assets/katex.min.js");
 
 static NORMALIZE_CSS: &str = include_str!("assets/normalize.css");
-static ATOM_DARK_CSS: &str = include_str!("assets/prism-atom-dark.css");
-static GH_COLORS_CSS: &str = include_str!("assets/prism-ghcolors.css");
 static KATEX_CSS: &str = include_str!("assets/katex.min.css");
 
 static KATEX_FONTS: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/katex-fonts");
-static PRISM_GRAMMARS: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/prism-grammars");
 
 lazy_static! {
     pub static ref HANDLEBARS: Handlebars<'static> = {
@@ -149,7 +146,7 @@ struct Document {
     path: PathBuf,
     rename: Option<String>,
     raw: String,
-    markdown: Markdown,
+    markdown: ParsedMarkdown,
     frontmatter: BTreeMap<String, String>,
     base_path: String,
 }
@@ -181,12 +178,13 @@ impl Document {
         };
 
         let markdown_options = {
-            let mut opts = docgen_markdown::ParseOptions::default();
+            let mut opts = ParseOptions::default();
             opts.url_root = base_path.to_owned();
             opts
         };
 
-        let markdown = docgen_markdown::parse(frontmatter::without(&raw), Some(markdown_options));
+        let mut parser = MarkdownParser::new(Some(markdown_options));
+        let markdown = parser.parse(frontmatter::without(&raw));
 
         Document {
             id: DOCUMENT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
@@ -239,12 +237,12 @@ impl Document {
         &self.markdown.headings
     }
 
-    fn outgoing_links(&self) -> &[docgen_markdown::Link] {
+    fn outgoing_links(&self) -> &[markdown::extensions::link_rewriter::Link] {
         &self.markdown.links
     }
 
     fn html(&self) -> &str {
-        &self.markdown.as_html
+        &self.markdown.html
     }
 
     fn title(&self) -> &str {

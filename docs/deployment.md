@@ -4,21 +4,15 @@ title: Deployment
 
 # Deployment
 
-Docgen builds a static site bundle into the `site` directory which is fully self contained. You can
-take the output of `docgen build --release` and deploy it in any way you see fit.
+Docgen builds a static site bundle into the `site` directory which is fully self contained. You can take the output of `docgen build --release` and deploy it in any way you see fit.
 
-{% info :point_right: Deploying under a custom path %}
-
-By default Docgen assumes the deployed page is accessible under the root url. E.g.
-`wwww.example.com`.
-
-If you want to deploy under a subdirectory, such as `www.example.com/docs`, you
-have to set the `base_path` in your `docgen.yaml` file. This will make Docgen generate URLs
-relative to e.g `/docs` instead of the plain root url `/`.
-
-Read more [here](/configuration#base_path-5).
-
-{% end %}
+> info :point_right: Deploying under a custom path
+>
+> By default Docgen assumes the deployed page is accessible under the root url. E.g.`wwww.example.com`.
+>
+> If you want to deploy under a subdirectory, such as `www.example.com/docs`, you have to set the `base_path` in your `docgen.yaml` file. This will make Docgen generate URLs relative to e.g `/docs` instead of the plain root url `/`.
+>
+> Read more [here](/configuration#base_path-5).
 
 Below is a walkthrough on how to publish your docs on Github Pages. We will be adding more tutorials
 for other hosting options over time.
@@ -65,11 +59,9 @@ Luckily, there is a handy command line tool, [gh-pages](https://www.npmjs.com/pa
 that takes care of all of that for you. All you need to do, is run a single command, and your site
 will be published.
 
-{% warning :warning: Note about gh-pages %}
-At the time of writing, `gh-pages@3.1.0` does not work for projects without a package.json
-file. This is why this guide recommends using `3.0.0`. Read more in [this
-issue](https://github.com/tschaub/gh-pages/issues/354).
-{% end %}
+> warning :warning: Note about gh-pages %}
+>
+> At the time of writing, `gh-pages@3.1.0` does not work for projects without a package.json file. This is why this guide recommends using `3.0.0`. Read more in [this issue](https://github.com/tschaub/gh-pages/issues/354).
 
 ```
 npm install -g gh-pages@3.0.0

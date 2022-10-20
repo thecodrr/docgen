@@ -3,8 +3,8 @@ source: tests/markdown_tests.rs
 description: last_tabgroup_in_doc_does_not_require_ending_rule
 info: "content before\n\n# [_Tab1_](#/tab/id1/condition1)\nFoo\n# [Tab2](#/tab/id2)\nBar"
 ---
-Markdown {
-    as_html: "<p>content before</p>\n<div class=\"tabgroup\"><ul role=\"tablist\"><li><label class=\"active\" id=\"id1\" title=\"Tab1\" role=\"tab\">Tab1</label></li><li><label class=\"\" id=\"id2\" title=\"Tab2\" role=\"tab\">Tab2</label></li></ul><div class=\"tab-panel active\" data-tab-id=\"id1\">\n<p>Foo</p>\n</div><div class=\"tab-panel\" data-tab-id=\"id2\">\n<p>Bar</p>\n</div></div>",
+ParsedMarkdown {
+    html: "<p>content before</p>\n<div class=\"tabgroup\"><ul role=\"tablist\"><li><label class=\"active\" id=\"id1\" title=\"Tab1\" role=\"tab\">Tab1</label></li><li><label class=\"\" id=\"id2\" title=\"Tab2\" role=\"tab\">Tab2</label></li></ul><div class=\"tab-panel active\" data-tab-id=\"id1\">\n<p>Foo</p>\n</div><div class=\"tab-panel\" data-tab-id=\"id2\">\n<p>Bar</p>\n</div></div>",
     headings: [],
     links: [],
 }

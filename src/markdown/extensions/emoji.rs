@@ -1,42 +1,39 @@
+use std::io::Write;
+
 use crate::markdown::extension::TextExtension;
 
 pub struct EmojiConverter;
 
 impl TextExtension for EmojiConverter {
     fn process_text<'a>(&self, text: &'a str) -> String {
-        return convert_emojis(text);
+        let mut v = Vec::new();
+        convert_emojis(text, &mut v).unwrap();
+        return String::from_utf8(v).unwrap();
     }
 }
 
-fn convert_emojis(input: &str) -> String {
-    let mut acc = String::with_capacity(input.len());
-    let mut parsing_emoji = false;
-    let mut emoji_identifier = String::new();
-
-    for c in input.chars() {
-        match (c, parsing_emoji) {
-            (':', false) => parsing_emoji = true,
-            (':', true) => {
-                if let Some(emoji) = emojis::lookup(&emoji_identifier) {
-                    acc.push_str(emoji.as_str());
-                } else {
-                    acc.push(':');
-                    acc.push_str(&emoji_identifier);
-                    acc.push(':');
-                }
-
-                parsing_emoji = false;
-                emoji_identifier.truncate(0);
+fn convert_emojis(mut input: &str, mut output: impl Write) -> std::io::Result<()> {
+    while let Some((i, m, n, j)) = input
+        .find(':')
+        .map(|i| (i, i + 1))
+        .and_then(|(i, m)| input[m..].find(':').map(|x| (i, m, m + x, m + x + 1)))
+    {
+        match emojis::get_by_shortcode(&input[m..n]) {
+            Some(emoji) => {
+                // Output everything preceding, except the first colon.
+                output.write_all(input[..i].as_bytes())?;
+                // Output the emoji.
+                output.write_all(emoji.as_bytes())?;
+                // Update the string to past the last colon.
+                input = &input[j..];
             }
-            (_, true) => emoji_identifier.push(c),
-            (_, false) => acc.push(c),
+            None => {
+                // Output everything preceding but not including the colon.
+                output.write_all(input[..n].as_bytes())?;
+                // Update the string to start with the last colon.
+                input = &input[n..];
+            }
         }
     }
-
-    if parsing_emoji {
-        acc.push(':');
-        acc.push_str(&emoji_identifier);
-    }
-
-    acc
+    output.write_all(input.as_bytes())
 }

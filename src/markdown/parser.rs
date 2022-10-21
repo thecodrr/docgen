@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
 use pulldown_cmark::{html, CowStr, Event, Options, Parser};
-use syntect::parsing::SyntaxSet;
 
 use super::{
     extension::{Extension, Output, TextExtension},
@@ -65,9 +64,7 @@ impl MarkdownParser {
                 current_tabgroup: None,
                 current_tab: None,
             }),
-            Box::new(CodeBlock {
-                syntax_set: SyntaxSet::load_defaults_newlines(),
-            }),
+            Box::new(CodeBlock),
             Box::new(LinkRewriter {
                 url_root,
                 link_rewrite_rules,

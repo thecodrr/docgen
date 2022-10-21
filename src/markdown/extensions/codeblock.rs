@@ -1,3 +1,4 @@
+use once_cell::sync::OnceCell;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Tag};
 use syntect::util::LinesWithEndings;
 
@@ -6,9 +7,9 @@ use syntect::html::line_tokens_to_classed_spans;
 use syntect::parsing::{ParseState, ScopeStack, SyntaxReference, SyntaxSet};
 use syntect::Error;
 
-pub struct CodeBlock {
-    pub syntax_set: SyntaxSet,
-}
+pub struct CodeBlock;
+
+static SYNTAX_SET: OnceCell<SyntaxSet> = OnceCell::new();
 
 impl Extension for CodeBlock {
     fn process_event<'a>(
@@ -18,17 +19,16 @@ impl Extension for CodeBlock {
     ) -> (Option<Vec<Output<'a>>>, bool) {
         match event {
             Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(inner))) => {
-                if let Some(syntax) = self
-                    .syntax_set
-                    .find_syntax_by_token(inner.to_string().as_str())
-                {
+                let syntax_set = SYNTAX_SET.get_or_init(|| SyntaxSet::load_defaults_newlines());
+
+                if let Some(syntax) = syntax_set.find_syntax_by_token(inner.to_string().as_str()) {
                     let code_event = events.last_mut().unwrap();
                     if let Some(code) = match code_event {
                         Event::Text(text) => Some(text.to_string()),
                         _ => None,
                     } {
                         let highlighted_code =
-                            highlighted_html_for_string(&code, &self.syntax_set, syntax);
+                            highlighted_html_for_string(&code, syntax_set, syntax);
 
                         if let Ok(highlighted_code) = highlighted_code {
                             *code_event = Event::Html(CowStr::from(highlighted_code));

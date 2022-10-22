@@ -3,7 +3,6 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use ascii::AsciiString;
 use bunt::termcolor::{ColorChoice, StandardStream};
 use tiny_http::{Request, Response, Server};
 
@@ -79,7 +78,7 @@ fn handle_request<B: SiteBackend>(request: Request, site: &Site<B>) {
                 request.respond(Response::from_data(data).with_status_code(200).with_header(
                     tiny_http::Header {
                         field: "Content-Type".parse().unwrap(),
-                        value: AsciiString::from_ascii(content_type).unwrap(),
+                        value: content_type.parse().unwrap(),
                     },
                 ))
             }

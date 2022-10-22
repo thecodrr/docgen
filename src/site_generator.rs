@@ -4,6 +4,7 @@ use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use elasticlunr::Index;
+use once_cell::sync::OnceCell;
 use rayon::prelude::*;
 use serde::Serialize;
 use syntect::highlighting::ThemeSet;
@@ -18,6 +19,21 @@ use crate::{Error, Result};
 
 static INCLUDE_DIR: &str = "_include";
 static HEAD_FILE: &str = "_head.html";
+static THEME_SET: OnceCell<ThemeSet> = OnceCell::new();
+
+macro_rules! export_file {
+    ($self: expr, $data: expr, $filename: expr, $dir: expr) => {
+        $self
+            .site
+            .add_file(&$self.config.out_dir().join($dir).join($filename), $data)
+            .map_err(|e| {
+                Error::io(
+                    e,
+                    format!("Could not write {} to {} directory", $filename, $dir),
+                )
+            })?;
+    };
+}
 
 pub struct SiteGenerator<'a, T: SiteBackend> {
     config: Config,
@@ -94,7 +110,7 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
 
     /// Builds fixed assets required by Docgen
     fn build_assets(&self) -> Result<()> {
-        let ts = ThemeSet::load_defaults();
+        let ts = THEME_SET.get_or_init(|| ThemeSet::load_defaults());
 
         // create dark color scheme css
         let dark_theme =
@@ -104,40 +120,16 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             css_for_theme_with_class_style(&ts.themes["InspiredGitHub"], ClassStyle::Spaced)
                 .unwrap();
 
-        // Add JS
-        self.site
-            .add_file(
-                &self.config.out_dir().join("assets").join("mermaid.js"),
-                crate::MERMAID_JS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write mermaid.js to assets directory"))?;
-        self.site
-            .add_file(
-                &self.config.out_dir().join("assets").join("elasticlunr.js"),
-                crate::ELASTIC_LUNR.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write elasticlunr.js to assets directory"))?;
+        export_file!(self, crate::MERMAID_JS.into(), "mermaid.js", "assets");
+        export_file!(self, crate::ELASTIC_LUNR.into(), "elasticlunr.js", "assets");
+
         if let BuildMode::Dev = self.config.build_mode() {
-            // Livereload only in release mode
-            self.site
-                .add_file(
-                    &self.config.out_dir().join("assets").join("livereload.js"),
-                    crate::LIVERELOAD_JS.into(),
-                )
-                .map_err(|e| Error::io(e, "Could not write livereload.js to assets directory"))?;
+            // Livereload only in debug mode
+            export_file!(self, crate::LIVERELOAD_JS.into(), "livereload.js", "assets");
         }
-        self.site
-            .add_file(
-                &self.config.out_dir().join("assets").join("katex.js"),
-                crate::KATEX_JS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write katex.js to assets directory"))?;
-        self.site
-            .add_file(
-                &self.config.out_dir().join("assets").join("docgen-app.js"),
-                crate::APP_JS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write docgen-app.js to assets directory"))?;
+
+        export_file!(self, crate::KATEX_JS.into(), "katex.js", "assets");
+        export_file!(self, crate::APP_JS.into(), "docgen-app.js", "assets");
 
         // Add fonts
         for font in crate::KATEX_FONTS
@@ -158,50 +150,15 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                 .map_err(|e| Error::io(e, "Could not write katex fonts to assets directory"))?;
         }
 
-        self.site
-            .add_file(
-                &self.config.out_dir().join("assets").join("normalize.css"),
-                crate::NORMALIZE_CSS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write normalize.css to assets directory"))?;
-        self.site
-            .add_file(
-                &self.config.out_dir().join("assets").join("katex.css"),
-                crate::KATEX_CSS.into(),
-            )
-            .map_err(|e| Error::io(e, "Could not write prism-atom-dark.css to assets directory"))?;
-
-        self.site
-            .add_file(
-                &self
-                    .config
-                    .out_dir()
-                    .join("assets")
-                    .join("syntect-theme-light.css"),
-                light_theme.into(),
-            )
-            .map_err(|e| {
-                Error::io(
-                    e,
-                    "Could not write syntect-theme-light.css to assets directory",
-                )
-            })?;
-
-        self.site
-            .add_file(
-                &self
-                    .config
-                    .out_dir()
-                    .join("assets")
-                    .join("syntect-theme-dark.css"),
-                dark_theme.into(),
-            )
-            .map_err(|e| {
-                Error::io(
-                    e,
-                    "Could not write syntect-theme-dark.css to assets directory",
-                )
-            })?;
+        export_file!(self, crate::NORMALIZE_CSS.into(), "normalize.css", "assets");
+        export_file!(self, crate::KATEX_CSS.into(), "katex.css", "assets");
+        export_file!(
+            self,
+            light_theme.into(),
+            "syntect-theme-light.css",
+            "assets"
+        );
+        export_file!(self, dark_theme.into(), "syntect-theme-dark.css", "assets");
 
         let mut data = serde_json::Map::new();
         data.insert(
@@ -219,13 +176,7 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             .render_to_write("style.css", &data, &mut out)
             .map_err(|e| Error::handlebars(e, "Could not write custom style sheet"))?;
 
-        let destination = self
-            .config
-            .out_dir()
-            .join("assets")
-            .join("docgen-style.css");
-
-        self.site.add_file(&destination, out.into())?;
+        export_file!(self, out.into(), "docgen-style.css", "assets");
 
         Ok(())
     }

@@ -279,7 +279,7 @@ impl Config {
 
         docgen_yaml.validate(project_root)?;
 
-        let preview_addr = get_safe_addr("0.0.0.0", docgen_yaml.port.unwrap_or_else(|| 4001))
+        let preview_addr = get_safe_addr("127.0.0.1", docgen_yaml.port.unwrap_or_else(|| 4001))
             .expect("Failed to get address for preview server.");
         let livereload_addr = get_safe_addr("127.0.0.1", 35729)
             .expect("Failed to get address for live reload server.");

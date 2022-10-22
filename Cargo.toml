@@ -14,7 +14,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 handlebars = "3.4.0"
 lazy_static = "1.4.0"
-tiny_http = "0.6"
+tiny_http = "0.8"
 ascii = "0.8"
 http = "0.2"
 notify = "4.0.12"

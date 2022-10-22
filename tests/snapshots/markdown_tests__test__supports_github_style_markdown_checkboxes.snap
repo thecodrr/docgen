@@ -4,7 +4,7 @@ description: supports_github_style_markdown_checkboxes
 info: "* [ ] Incomplete\n* [x] Complete\n"
 ---
 ParsedMarkdown {
-    html: "<ul>\n<li><input disabled=\"\" type=\"checkbox\">\nIncomplete</li>\n<li><input disabled=\"\" type=\"checkbox\" checked=\"\">\nComplete</li>\n</ul>\n",
+    html: "<ul>\n<li><input disabled=\"\" type=\"checkbox\"/>\nIncomplete</li>\n<li><input disabled=\"\" type=\"checkbox\" checked=\"\"/>\nComplete</li>\n</ul>\n",
     headings: [],
     links: [],
 }

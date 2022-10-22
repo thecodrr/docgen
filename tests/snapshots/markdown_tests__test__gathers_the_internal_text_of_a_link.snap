@@ -4,7 +4,7 @@ description: gathers_the_internal_text_of_a_link
 info: "[**BOLD**](/bar)\n[![AltText](/src/foo)](/bar)\n## [AnHeader](/bar)"
 ---
 ParsedMarkdown {
-    html: "<p><a href=\"/bar\"><strong>BOLD</strong></a>\n<a href=\"/bar\"><img src=\"/src/foo\" alt=\"AltText\"></a></p>\n<h2 id=\"anheader\"><a href=\"/bar\">AnHeader</a></h2>\n\n",
+    html: "<p><a href=\"/bar\"><strong>BOLD</strong></a>\n<a href=\"/bar\"><img src=\"/src/foo\" alt=\"AltText\" /></a></p>\n<h2 id=\"anheader\"><a href=\"/bar\">AnHeader</a></h2>\n",
     headings: [
         Heading {
             title: "AnHeader",

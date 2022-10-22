@@ -4,7 +4,7 @@ description: callouts_can_contain_images
 info: "> info An Info\n>\n> ![an pic](/cat.jpg)"
 ---
 ParsedMarkdown {
-    html: "<div class=\"callout info\"><p class=\"callout-title\">An Info</p>\n<p><img src=\"/cat.jpg\" alt=\"an pic\"></p>\n</div>",
+    html: "<div class=\"callout info\"><p class=\"callout-title\">An Info</p>\n<p><img src=\"/cat.jpg\" alt=\"an pic\" /></p>\n</div>",
     headings: [],
     links: [],
 }

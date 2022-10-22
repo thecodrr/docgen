@@ -45,7 +45,6 @@ impl Extension for TableOfContents {
                 *header_start = html!("<h{} id=\"{}\">", heading.level, heading.anchor);
 
                 output.push(Output::Heading(heading));
-                output.push(Output::Event(event.to_owned()));
 
                 return (Some(output), false);
             }

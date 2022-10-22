@@ -32,7 +32,6 @@ include_dir = "0.7.2"
 pulldown-cmark = { version = "0.8", default-features = false, features = [
     "simd",
 ] }
-ammonia = "3"
 url = "2.2.1"
 emojis = "0.5.1"
 regex = "1"
@@ -50,4 +49,7 @@ insta = { version = "1.21.0", features = ["yaml"] }
 opt-level = 3
 
 [profile.dev.package.similar]
+opt-level = 3
+
+[profile.release]
 opt-level = 3

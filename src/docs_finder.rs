@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::path::Path;
+use std::sync::mpsc::channel;
 
 use crate::config::Config;
 use crate::{Directory, Document};
+use rayon::prelude::*;
 
 use walkdir::WalkDir;
 
@@ -22,33 +24,49 @@ pub fn find(config: &Config) -> Directory {
 }
 
 fn walk_dir<P: AsRef<Path>>(dir: P, config: &Config) -> Option<Directory> {
-    let mut docs = vec![];
-    let mut dirs = vec![];
-
     let current_dir: &Path = dir.as_ref();
 
-    for entry in WalkDir::new(&current_dir)
+    let (sender, receiver) = channel();
+
+    WalkDir::new(&current_dir)
         .follow_links(true)
         .max_depth(1)
         .into_iter()
         .filter_map(|e| e.ok())
-    {
-        if entry.file_type().is_file() && entry.path().extension() == Some(OsStr::new("md")) {
-            let path = entry.path().strip_prefix(config.docs_dir()).unwrap();
+        .par_bridge()
+        .for_each_with(sender, |sender, entry| {
+            if entry.file_type().is_file() && entry.path().extension() == Some(OsStr::new("md")) {
+                let path = entry.path().strip_prefix(config.docs_dir()).unwrap();
 
-            docs.push(Document::load(entry.path(), path, config.base_path()));
-        } else {
-            let path = entry.into_path();
+                sender
+                    .send((
+                        None,
+                        Some(Document::load(entry.path(), path, config.base_path())),
+                    ))
+                    .unwrap();
+            } else {
+                let path = entry.into_path();
 
-            if path.as_path() == current_dir {
-                continue;
+                if path.as_path() == current_dir {
+                    return;
+                }
+
+                if let Some(dir) = walk_dir(path, config) {
+                    sender.send((Some(dir), None)).unwrap();
+                }
             }
+        });
 
-            if let Some(dir) = walk_dir(path, config) {
-                dirs.push(dir);
-            }
+    let mut docs = vec![];
+    let mut dirs = vec![];
+
+    receiver.iter().for_each(|(dir, doc)| {
+        if let Some(dir) = dir {
+            dirs.push(dir);
+        } else if let Some(doc) = doc {
+            docs.push(doc);
         }
-    }
+    });
 
     if docs.is_empty() {
         None

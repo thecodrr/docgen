@@ -26,6 +26,7 @@ Docgen comes with a number of documentation-specific features out of the box. No
 - Minimal configuration
 - Symlinked files **[new]**
 - Tabs **[new]**
+- Static code block syntax highlighting (thanks to syntect) **[new]**
 - Fast build times (Docgen is built with Rust)
 
 ## Hosting

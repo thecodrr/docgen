@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use pulldown_cmark::{html, CowStr, Event, Options, Parser};
 
@@ -104,6 +104,9 @@ impl MarkdownParser {
                         *event = Event::Text(CowStr::from(copy.to_owned()));
                     }
                 }
+                Event::Html(_) => {
+                    continue;
+                }
                 _ => {}
             }
 
@@ -134,69 +137,10 @@ impl MarkdownParser {
         html::push_html(&mut as_html, events.into_iter());
 
         ParsedMarkdown {
-            html: self.to_html(as_html),
+            html: as_html,
             headings,
             links,
         }
-    }
-
-    fn to_html(&self, html: String) -> String {
-        let mut allowed_div_classes = HashSet::new();
-        // Mermaid JS and math blocks
-        allowed_div_classes.insert("mermaid");
-        allowed_div_classes.insert("math");
-        // Callout-specific
-        allowed_div_classes.insert("callout");
-        allowed_div_classes.insert("callout-title");
-        allowed_div_classes.insert("info");
-        allowed_div_classes.insert("success");
-        allowed_div_classes.insert("warning");
-        allowed_div_classes.insert("error");
-        // Tabs specific
-        allowed_div_classes.insert("tabgroup");
-        allowed_div_classes.insert("tab");
-        allowed_div_classes.insert("tab-panel");
-        allowed_div_classes.insert("active");
-
-        let mut allowed_label_classes = HashSet::new();
-        allowed_label_classes.insert("active");
-
-        let mut allowed_classes = HashMap::new();
-        allowed_classes.insert("div", allowed_div_classes);
-        allowed_classes.insert("label", allowed_label_classes);
-
-        ammonia::Builder::new()
-            .link_rel(None)
-            .add_tags(&["h1"])
-            .add_tag_attributes("h1", &["id"])
-            .add_tags(&["h2"])
-            .add_tag_attributes("h2", &["id"])
-            .add_tags(&["h3"])
-            .add_tag_attributes("h3", &["id"])
-            .add_tags(&["h4"])
-            .add_tag_attributes("h4", &["id"])
-            .add_tags(&["h5"])
-            .add_tag_attributes("h5", &["id"])
-            .add_tags(&["h6"])
-            .add_tag_attributes("h6", &["id"])
-            .add_tags(&["code"])
-            .add_tag_attributes("code", &["class"])
-            .add_tags(&["p"])
-            .add_tag_attributes("p", &["class"])
-            .add_tags(&["label"])
-            .add_tag_attributes("label", &["id", "role"])
-            .add_tags(&["input"])
-            .add_tag_attribute_values("input", "disabled", &[""])
-            .add_tag_attribute_values("input", "type", &["checkbox"])
-            .add_tag_attribute_values("input", "checked", &[""])
-            .allowed_classes(allowed_classes)
-            .add_tag_attributes("div", &["id", "data-tab-title", "data-tab-id"])
-            .add_tag_attributes("ul", &["role"])
-            .add_tag_attributes("li", &["role"])
-            .add_tag_attributes("span", &["class"])
-            .add_clean_content_tags(&["form", "script", "style"])
-            .clean(html.as_str())
-            .to_string()
     }
 }
 

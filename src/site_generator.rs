@@ -162,13 +162,6 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             ));
         }
 
-        self.scripts.push(export_asset!(
-            self,
-            "katex.min.js",
-            "assets",
-            AssetScope::Math
-        ));
-
         self.scripts
             .push(export_asset!(self, "app.js", "assets", AssetScope::App));
 
@@ -223,22 +216,6 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
 
         self.stylesheets
             .push(export_asset!(self, "style.css", "assets", AssetScope::App));
-
-        // let mut data = serde_json::Map::new();
-        // data.insert(
-        //     "theme_main".to_string(),
-        //     serde_json::Value::String(self.config.main_color().to_css_string()),
-        // );
-        // data.insert(
-        //     "theme_main_dark".to_string(),
-        //     serde_json::Value::String(self.config.main_color_dark().to_css_string()),
-        // );
-
-        // let mut out = Vec::new();
-
-        // crate::HANDLEBARS
-        //     .render_to_write("style.css", &data, &mut out)
-        //     .map_err(|e| Error::handlebars(e, "Could not write custom style sheet"))?;
 
         Ok(())
     }

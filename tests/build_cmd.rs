@@ -649,12 +649,7 @@ integration_test!(includes_katex_bundles, |area| {
     assert_success(&result);
 
     area.assert_exists(area.path.join("site").join("assets").join("fonts"));
-    area.assert_exists(
-        area.path
-            .join("site")
-            .join("assets")
-            .join(ASSETS_MAP.get("katex.min.js").unwrap()),
-    );
+
     area.assert_exists(
         area.path
             .join("site")

@@ -337,10 +337,9 @@ mod test {
     snapshot_test!(
         it_detects_math_blocks,
         "```math
-        % \\f is defined as #1f(#2) using the macro
-        \\f\\relax{x} = \\int_{-\\infty}^\\infty
-            \\f\\hat\\xi\\,e^{2 \\pi i \\xi x}
-            \\,d\\xi
+        x^2 - 5x + 6 = 0 \\
+        (x-2)(x-3)=0 \\
+        \\textrm{then either }x=2 \\,or\\,x=3
         ```
         ",
         |_| {}

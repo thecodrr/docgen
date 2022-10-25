@@ -153,52 +153,6 @@ if (color === "dark") {
   if ("mermaid" in globalThis) mermaid.initialize({ theme: "default" });
 }
 
-function renderMath() {
-  if (!("katex" in globalThis)) {
-    const katexScript = document.querySelector('script[src*="katex"]');
-    if (katexScript instanceof HTMLScriptElement)
-      katexScript.onload = renderMath;
-    return;
-  }
-
-  // Setup Katex
-  var mathElements = document.getElementsByClassName("math");
-
-  const macros = {};
-
-  for (let element of mathElements) {
-    let latex = element.textContent;
-
-    try {
-      katex.render(latex, element, {
-        displayMode: true,
-        macros: macros,
-      });
-    } catch (e) {
-      if (e instanceof katex.ParseError) {
-        // KaTeX can't parse the expression
-        var error_message = e.message
-          .replaceAll(/^KaTeX parse error: /g, "Error parsing math notation:\n")
-          .replaceAll(/&/g, "&amp;")
-          .replaceAll(/</g, "&lt;")
-          .replaceAll(/>/g, "&gt;")
-          .replaceAll("\n", "<br />");
-
-        element.innerHTML =
-          "<p class='katex-error-msg'>" +
-          error_message +
-          "</p>" +
-          latex.trim().replaceAll("\n", "<br />");
-        element.classList.add("katex-error");
-      } else {
-        throw e; // other error
-      }
-    }
-  }
-}
-// Setup Prism
-// Prism.plugins.autoloader.languages_path = BASE_PATH + "assets/prism-grammars/";
-
 // Load search index
 var INDEX;
 
@@ -285,4 +239,3 @@ document.onclick = (ev) => {
 disableScrollifMenuOpen();
 dragRightMenu();
 setColor();
-renderMath();

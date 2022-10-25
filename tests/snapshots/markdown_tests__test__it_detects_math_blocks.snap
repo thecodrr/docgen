@@ -7,4 +7,7 @@ ParsedMarkdown {
     html: "<div class=\"math\">\n% \\f is defined as #1f(#2) using the macro\n\\f\\relax{x} = \\int_{-\\infty}^\\infty\n    \\f\\hat\\xi\\,e^{2 \\pi i \\xi x}\n    \\,d\\xi\n</div>",
     headings: [],
     links: [],
+    blocks: {
+        "math",
+    },
 }

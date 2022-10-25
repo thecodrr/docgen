@@ -7,6 +7,8 @@ pub enum Output<'a> {
     Event(Event<'a>),
     Link(Link),
     Heading(Heading),
+
+    Block(&'a str),
 }
 
 pub trait Extension {

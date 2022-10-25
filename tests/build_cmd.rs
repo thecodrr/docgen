@@ -4,6 +4,7 @@ extern crate indoc;
 #[allow(dead_code)]
 mod support;
 
+use docgen::ASSETS_MAP;
 use std::path::Path;
 use support::*;
 
@@ -334,8 +335,11 @@ integration_test!(custom_colors, |area| {
         indoc! {"
     ---
     title: Custom colors
-    colors:
-      main: \"#5f658a\"
+    themes:
+      light:
+        main: \"#5f658a\"
+      dark:
+        main: \"#5f658a\"
     "}
         .as_bytes(),
     );
@@ -345,9 +349,9 @@ integration_test!(custom_colors, |area| {
     let result = area.cmd(&["build"]);
     assert_success(&result);
 
-    let css = Path::new("site").join("assets").join("docgen-style.css");
+    let css = Path::new("site").join("index.html");
     // Should contain the RGB value for #5f658a
-    area.assert_contains(&css, "color: rgb(95,101,138);");
+    area.assert_contains(&css, "--primary-color: #5f658a");
 });
 
 integration_test!(custom_colors_invalid, |area| {
@@ -357,8 +361,11 @@ integration_test!(custom_colors_invalid, |area| {
         indoc! {"
     ---
     title: Custom colors
-    colors:
-      main: not-a-color
+    themes:
+      light:
+        main: not-a-color
+      dark:
+        main: not-a-color
     "}
         .as_bytes(),
     );
@@ -369,7 +376,7 @@ integration_test!(custom_colors_invalid, |area| {
     assert_failed(&result);
     assert_output(
         &result,
-        "Invalid HEX color provided for colors.main in docgen.yaml.",
+        "Invalid HEX color provided for themes.dark.main in docgen.yaml.",
     );
     assert_output(&result, "Found 'not-a-color'");
 });
@@ -441,22 +448,22 @@ integration_test!(include_header, |area| {
     area.refute_exists(&head);
 });
 
-integration_test!(cache_buster, |area| {
-    area.create_config();
-    area.mkdir("docs");
-    area.write_file(Path::new("docs").join("README.md"), b"# Hi");
+// integration_test!(cache_buster, |area| {
+//     area.create_config();
+//     area.mkdir("docs");
+//     area.write_file(Path::new("docs").join("README.md"), b"# Hi");
 
-    let result = area.cmd(&["build"]);
-    assert_success(&result);
+//     let result = area.cmd(&["build"]);
+//     assert_success(&result);
 
-    let index = Path::new("site").join("index.html");
+//     let index = Path::new("site").join("index.html");
 
-    // No access to the actual timestamp, but we should be fine until unix timestamps
-    // roll over to start with the number 2.
-    //
-    // Famous last words ofc...
-    area.assert_contains(&index, "docgen-style.css?v=1");
-});
+//     // No access to the actual timestamp, but we should be fine until unix timestamps
+//     // roll over to start with the number 2.
+//     //
+//     // Famous last words ofc...
+//     area.assert_contains(&index, "docgen-style.css?v=1");
+// });
 
 integration_test!(base_path, |area| {
     area.create_config();
@@ -641,7 +648,17 @@ integration_test!(includes_katex_bundles, |area| {
     let result = area.cmd(&["build"]);
     assert_success(&result);
 
-    area.assert_exists(area.path.join("site").join("assets").join("katex-fonts"));
-    area.assert_exists(area.path.join("site").join("assets").join("katex.js"));
-    area.assert_exists(area.path.join("site").join("assets").join("katex.css"));
+    area.assert_exists(area.path.join("site").join("assets").join("fonts"));
+    area.assert_exists(
+        area.path
+            .join("site")
+            .join("assets")
+            .join(ASSETS_MAP.get("katex.min.js").unwrap()),
+    );
+    area.assert_exists(
+        area.path
+            .join("site")
+            .join("assets")
+            .join(ASSETS_MAP.get("katex.min.css").unwrap()),
+    );
 });

@@ -214,7 +214,7 @@ impl SiteBackend for InMemorySite {
     }
 
     fn build(&self) -> Result<()> {
-        let generator = SiteGenerator::new(self);
+        let mut generator = SiteGenerator::new(self);
 
         generator.run()
     }
@@ -323,7 +323,7 @@ impl SiteBackend for DiskBackedSite {
     }
 
     fn build(&self) -> Result<()> {
-        let generator = SiteGenerator::new(self);
+        let mut generator = SiteGenerator::new(self);
 
         generator.run()
     }

@@ -7,4 +7,5 @@ ParsedMarkdown {
     html: "<div class=\"callout warning\">\n<p>The content</p>\n</div>",
     headings: [],
     links: [],
+    blocks: {},
 }

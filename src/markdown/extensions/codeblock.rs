@@ -33,7 +33,10 @@ impl Extension for CodeBlock {
                         if let Ok(highlighted_code) = highlighted_code {
                             *code_event = Event::Html(CowStr::from(highlighted_code));
 
-                            return (Some(vec![Output::Event(event.to_owned())]), true);
+                            return (
+                                Some(vec![Output::Event(event.to_owned()), Output::Block("code")]),
+                                true,
+                            );
                         }
                     }
                 }
@@ -63,7 +66,7 @@ fn highlighted_html_for_string(
             parsed_line.remove(0);
         }
 
-        let (formatted_line, mut delta) = line_tokens_to_classed_spans(
+        let (formatted_line, delta) = line_tokens_to_classed_spans(
             line,
             parsed_line.as_slice(),
             syntect::html::ClassStyle::Spaced,
@@ -73,7 +76,7 @@ fn highlighted_html_for_string(
         // since we removed the wrapping span we don't want to close a
         // non-existent span
         if first_line {
-            delta -= 1;
+            // delta -= 1;
             first_line = false;
         }
 

@@ -7,4 +7,5 @@ ParsedMarkdown {
     html: "<div class=\"callout info\"><p class=\"callout-title\">An Info</p>\n<p><img src=\"/cat.jpg\" alt=\"an pic\" /></p>\n</div>",
     headings: [],
     links: [],
+    blocks: {},
 }

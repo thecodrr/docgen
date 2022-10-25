@@ -1,8 +1,8 @@
 html.light {
-  --document-background-color: #fff;
-  --background-color: #fff;
+  --document-background-color: #fafafa;
+  --background-color: #ffffff;
   --hover-color: #f4f4f4;
-  --primary-color: {{ theme_main }};
+  /* --primary-color: {{ theme_main }}; */
   --border-color: #eee;
   --fg: #000;
   --fg-dim: #3c3c3c;
@@ -16,12 +16,12 @@ html.dark {
   --background-color: #202b33;
   --border-color: #6b747b;
   --hover-color: #30404d;
-  --primary-color: {{ theme_main_dark }};
+  /* --primary-color: {{ theme_main_dark }}; */
   --fg: #fff;
   --fg-dim: #dcdcdc;
   --fg-dimmer: #a2a2a2;
   --code-bg: #202b33;
-  --header-fg: var(--fg);
+  --header-fg: var(--primary-color);
 }
 
 /* Base ---------------------------------------------------------------- */
@@ -115,13 +115,19 @@ p code {
 }
 
 blockquote p {
-  font-size: 1.8rem;
+  font-size: 1rem;
   font-style: italic;
 }
 
 blockquote {
-  padding-top: 30px;
-  padding-bottom: 30px;
+  margin: 0px;
+  padding: 0px;
+  border-left: 5px solid var(--primary-color);
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-top: 1px;
+  padding-bottom: 1px;
+  background-color: var(--background-color);
 }
 
 thead tr:last-child {
@@ -561,9 +567,6 @@ code {
   color: var(--header-fg);
 }
 
-nav {
-}
-
 nav a {
   text-decoration: none;
 }
@@ -614,9 +617,6 @@ nav ul ul a {
 
 /* Right sidebar ------------------------------------------------------- */
 
-.sidebar-right {
-}
-
 .page-nav-header {
   color: #adadad;
   margin-bottom: 4pt;
@@ -638,9 +638,6 @@ nav ul ul a {
 
 .sidebar-right li a:hover {
   border-bottom: 1px solid var(--primary-color);
-}
-
-.sidebar-right a:hover {
 }
 
 .sidebar-right li {

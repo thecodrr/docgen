@@ -7,4 +7,5 @@ ParsedMarkdown {
     html: "<p>I am 😀.</p>\n",
     headings: [],
     links: [],
+    blocks: {},
 }

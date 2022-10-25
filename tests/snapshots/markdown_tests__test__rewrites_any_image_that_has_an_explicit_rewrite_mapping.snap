@@ -7,4 +7,5 @@ ParsedMarkdown {
     html: "<p><img src=\"https://example.com/cat.jpg\" alt=\"an image\" /></p>\n",
     headings: [],
     links: [],
+    blocks: {},
 }

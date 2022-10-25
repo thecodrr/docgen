@@ -133,7 +133,7 @@ fn close_tabgroup<'a>(events: &mut Vec<Event>, tabgroup: &mut TabGroup) -> Vec<O
     tabgroup.tabs.iter().for_each(|tab| {
         tablist.push(html!("<li class= role=\"presentation\">"));
         tablist.push(html!(
-            "<label class=\"{}\" id=\"{}\" title=\"{}\" role=\"tab\">{}</a>",
+            "<label class=\"{}\" id=\"{}\" title=\"{}\" role=\"tab\">{}</label>",
             if tab.is_active { "active" } else { "" },
             tab.id,
             tab.title,

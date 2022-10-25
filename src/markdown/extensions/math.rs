@@ -15,7 +15,10 @@ impl Extension for MathBlock {
                 let lang = inner.split(' ').next().unwrap();
                 if lang == "math" {
                     return (
-                        Some(vec![Output::Event(html!("<div class=\"math\">\n"))]),
+                        Some(vec![
+                            Output::Event(html!("<div class=\"math\">\n")),
+                            Output::Block("math"),
+                        ]),
                         true,
                     );
                 }

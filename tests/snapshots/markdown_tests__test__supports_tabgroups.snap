@@ -4,7 +4,8 @@ description: supports_tabgroups
 info: "# [_Tab1_](#/tab/id1/condition1)\nFoo\n# [Tab2](#/tab/id2)\nBar\n\n---"
 ---
 ParsedMarkdown {
-    html: "<div class=\"tabgroup\"><ul class=\"tab-list\" role=\"tablist\"><li class= role=\"presentation\"><label class=\"active\" id=\"id1\" title=\"Tab1\" role=\"tab\">Tab1</a></li><li class= role=\"presentation\"><label class=\"\" id=\"id2\" title=\"Tab2\" role=\"tab\">Tab2</a></li></ul><div class=\"tab-panel active\" data-tab-id=\"id1\">\n<p>Foo</p>\n</div><div class=\"tab-panel \" data-tab-id=\"id2\">\n<p>Bar</p>\n</div></div>",
+    html: "<div class=\"tabgroup\"><ul class=\"tab-list\" role=\"tablist\"><li class= role=\"presentation\"><label class=\"active\" id=\"id1\" title=\"Tab1\" role=\"tab\">Tab1</label></li><li class= role=\"presentation\"><label class=\"\" id=\"id2\" title=\"Tab2\" role=\"tab\">Tab2</label></li></ul><div class=\"tab-panel active\" data-tab-id=\"id1\">\n<p>Foo</p>\n</div><div class=\"tab-panel \" data-tab-id=\"id2\">\n<p>Bar</p>\n</div></div>",
     headings: [],
     links: [],
+    blocks: {},
 }

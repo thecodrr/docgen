@@ -7,4 +7,5 @@ ParsedMarkdown {
     html: "",
     headings: [],
     links: [],
+    blocks: {},
 }

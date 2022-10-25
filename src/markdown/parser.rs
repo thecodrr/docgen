@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use pulldown_cmark::{html, CowStr, Event, Options, Parser};
 
@@ -26,6 +26,18 @@ pub struct ParsedMarkdown {
     pub html: String,
     pub headings: Vec<Heading>,
     pub links: Vec<Link>,
+    pub blocks: HashSet<String>,
+}
+
+impl Default for ParsedMarkdown {
+    fn default() -> Self {
+        ParsedMarkdown {
+            html: String::new(),
+            headings: vec![],
+            links: vec![],
+            blocks: HashSet::new(),
+        }
+    }
 }
 
 pub struct ParseOptions {
@@ -90,8 +102,7 @@ impl MarkdownParser {
             .peekable();
 
         let mut events: Vec<Event> = Vec::new();
-        let mut links: Vec<Link> = Vec::new();
-        let mut headings: Vec<Heading> = Vec::new();
+        let mut parsed = ParsedMarkdown::default();
 
         while let Some(ev) = parser.next() {
             let event = &mut ev.to_owned();
@@ -114,7 +125,7 @@ impl MarkdownParser {
             for extension in &mut self.extensions {
                 let (output, is_handled) = extension.process_event(&mut events, &event);
 
-                handle_output(output, &mut events, &mut links, &mut headings);
+                handle_output(output, &mut events, &mut parsed);
 
                 if is_handled {
                     handled = true;
@@ -129,32 +140,29 @@ impl MarkdownParser {
 
         for extension in &mut self.extensions {
             let output = extension.end_of_doc(&mut events);
-            handle_output(output, &mut events, &mut links, &mut headings);
+            handle_output(output, &mut events, &mut parsed);
         }
 
         // Write to String buffer.
-        let mut as_html = String::new();
-        html::push_html(&mut as_html, events.into_iter());
+        html::push_html(&mut parsed.html, events.into_iter());
 
-        ParsedMarkdown {
-            html: as_html,
-            headings,
-            links,
-        }
+        parsed
     }
 }
 
 fn handle_output<'a>(
     output: Option<Vec<Output<'a>>>,
     events: &mut Vec<Event<'a>>,
-    links: &mut Vec<Link>,
-    headings: &mut Vec<Heading>,
+    parsed: &mut ParsedMarkdown,
 ) {
     if let Some(output) = output {
         output.into_iter().for_each(|result| match result {
             Output::Event(ev) => events.push(ev),
-            Output::Link(link) => links.push(link),
-            Output::Heading(heading) => headings.push(heading),
+            Output::Link(link) => parsed.links.push(link),
+            Output::Heading(heading) => parsed.headings.push(heading),
+            Output::Block(block) => {
+                parsed.blocks.insert(block.to_string());
+            }
             _ => {}
         });
     }

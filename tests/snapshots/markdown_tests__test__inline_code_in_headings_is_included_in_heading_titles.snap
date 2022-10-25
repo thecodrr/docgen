@@ -13,4 +13,5 @@ ParsedMarkdown {
         },
     ],
     links: [],
+    blocks: {},
 }

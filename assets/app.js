@@ -21,17 +21,20 @@ function search() {
   };
 
   INDEX.search(box.value, config).forEach(function (result) {
-    listItem = document.createElement("li");
+    const listItem = document.createElement("li");
     listItem.className = "search-result-item";
-    listItem.innerHTML =
-      "<a href='" +
-      result.doc.uri +
-      "'>" +
-      result.doc.title +
-      "<p class='search-result-item-preview'>" +
-      searchPreview(result.doc.body) +
-      "</p>" +
-      "</a>";
+
+    const anchor = document.createElement("a");
+    anchor.href = result.doc.uri;
+
+    const preview = document.createElement("p");
+    preview.classList.add("search-result-item-preview");
+    preview.innerHTML = searchPreview(result.doc.preview);
+    preview.innerHTML = preview.innerText;
+
+    anchor.appendChild(document.createTextNode(result.doc.title));
+    anchor.appendChild(preview);
+    listItem.appendChild(anchor);
 
     list.appendChild(listItem);
   });
@@ -40,7 +43,6 @@ function search() {
 function searchPreview(body) {
   return (
     body
-      .substring(0, 100)
       .replace(/=+/g, "")
       .replace(/#+/g, "")
       .replace(/\*+/g, "")
@@ -138,22 +140,6 @@ function toggleColor() {
   setColor();
 }
 
-function setColor() {
-  var color = localStorage.getItem("docgen-color");
-
-  if (color === "dark") {
-    document.querySelector("link[rel='stylesheet'][href*='syntect-']").href =
-      BASE_PATH + "assets/syntect-theme-dark.css?v=" + DOCGEN_TIMESTAMP;
-    document.getElementsByTagName("html")[0].classList.remove("light");
-    document.getElementsByTagName("html")[0].classList.add("dark");
-  } else {
-    document.querySelector("link[rel='stylesheet'][href*='syntect-']").href =
-      BASE_PATH + "assets/syntect-theme-light.css?" + DOCGEN_TIMESTAMP;
-    document.getElementsByTagName("html")[0].classList.remove("dark");
-    document.getElementsByTagName("html")[0].classList.add("light");
-  }
-}
-
 document
   .getElementById("light-dark-mode-switch")
   .addEventListener("click", toggleColor);
@@ -162,46 +148,54 @@ document
 var color = localStorage.getItem("docgen-color");
 if (color === "dark") {
   console.log("DARK MODE");
-  mermaid.initialize({ theme: "dark" });
+  if ("mermaid" in globalThis) mermaid.initialize({ theme: "dark" });
 } else {
-  mermaid.initialize({ theme: "default" });
+  if ("mermaid" in globalThis) mermaid.initialize({ theme: "default" });
 }
 
-// Setup Katex
-var mathElements = document.getElementsByClassName("math");
+function renderMath() {
+  if (!("katex" in globalThis)) {
+    const katexScript = document.querySelector('script[src*="katex"]');
+    if (katexScript instanceof HTMLScriptElement)
+      katexScript.onload = renderMath;
+    return;
+  }
 
-const macros = {};
+  // Setup Katex
+  var mathElements = document.getElementsByClassName("math");
 
-for (let element of mathElements) {
-  let latex = element.textContent;
+  const macros = {};
 
-  try {
-    katex.render(latex, element, {
-      displayMode: true,
-      macros: macros,
-    });
-  } catch (e) {
-    if (e instanceof katex.ParseError) {
-      // KaTeX can't parse the expression
-      var error_message = e.message
-        .replaceAll(/^KaTeX parse error: /g, "Error parsing math notation:\n")
-        .replaceAll(/&/g, "&amp;")
-        .replaceAll(/</g, "&lt;")
-        .replaceAll(/>/g, "&gt;")
-        .replaceAll("\n", "<br />");
+  for (let element of mathElements) {
+    let latex = element.textContent;
 
-      element.innerHTML =
-        "<p class='katex-error-msg'>" +
-        error_message +
-        "</p>" +
-        latex.trim().replaceAll("\n", "<br />");
-      element.classList.add("katex-error");
-    } else {
-      throw e; // other error
+    try {
+      katex.render(latex, element, {
+        displayMode: true,
+        macros: macros,
+      });
+    } catch (e) {
+      if (e instanceof katex.ParseError) {
+        // KaTeX can't parse the expression
+        var error_message = e.message
+          .replaceAll(/^KaTeX parse error: /g, "Error parsing math notation:\n")
+          .replaceAll(/&/g, "&amp;")
+          .replaceAll(/</g, "&lt;")
+          .replaceAll(/>/g, "&gt;")
+          .replaceAll("\n", "<br />");
+
+        element.innerHTML =
+          "<p class='katex-error-msg'>" +
+          error_message +
+          "</p>" +
+          latex.trim().replaceAll("\n", "<br />");
+        element.classList.add("katex-error");
+      } else {
+        throw e; // other error
+      }
     }
   }
 }
-
 // Setup Prism
 // Prism.plugins.autoloader.languages_path = BASE_PATH + "assets/prism-grammars/";
 
@@ -263,7 +257,8 @@ document.onkeydown = function (e) {
 
 document.onclick = (ev) => {
   if (ev.target instanceof HTMLElement) {
-    const tabId = ev.target.closest(`[role="tab"]`).id;
+    const tabId =
+      ev.target.closest(`[role="tab"]`) && ev.target.closest(`[role="tab"]`).id;
     if (tabId) {
       for (const tabItem of document.querySelectorAll(
         `.tabgroup label#${tabId}`
@@ -290,3 +285,4 @@ document.onclick = (ev) => {
 disableScrollifMenuOpen();
 dragRightMenu();
 setColor();
+renderMath();

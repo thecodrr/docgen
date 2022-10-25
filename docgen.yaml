@@ -1,7 +1,10 @@
 ---
 title: Docgen
-colors:
-  main: "#6875f5"
+themes:
+  light:
+    main: "#6875f5"
+  dark:
+    main: "#868dd7"
 
 navigation:
   - path: docs/installing.md

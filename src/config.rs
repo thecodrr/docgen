@@ -1,11 +1,11 @@
+use std::collections::HashMap;
 use std::fs;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
-use colorsys::prelude::*;
 use colorsys::Rgb;
 use http::Uri;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::address::get_safe_addr;
 use crate::navigation::Link;
@@ -16,7 +16,8 @@ use crate::{Error, Result};
 struct DocgenYaml {
     title: String,
     port: Option<u16>,
-    colors: Option<ColorsYaml>,
+    // colors: Option<ColorsYaml>,
+    themes: Option<ThemesYaml>,
     logo: Option<PathBuf>,
     navigation: Option<Vec<Navigation>>,
     base_path: Option<String>,
@@ -43,15 +44,21 @@ impl DocgenYaml {
         // exists.
         let docs_dir_path = self.docs_dir(project_root);
 
-        // Validate color
-        if let Some(color) = &self.colors.as_ref().and_then(|c| c.main.as_ref()) {
-            Rgb::from_hex_str(color).map_err(|_e| {
-                Error::new(format!(
-                    "Invalid HEX color provided for \
-                    colors.main in docgen.yaml.\nFound '{}'",
-                    &self.colors.as_ref().and_then(|c| c.main.as_ref()).unwrap()
-                ))
-            })?;
+        // Validate theme colors
+        if let Some(themes) = &self.themes {
+            for theme in [&themes.dark, &themes.light] {
+                if let Some(theme) = theme {
+                    for (name, color) in theme {
+                        Rgb::from_hex_str(color.as_str()).map_err(|_e| {
+                            Error::new(format!(
+                                "Invalid HEX color provided for \
+                                themes.dark.{} in docgen.yaml.\nFound '{}'",
+                                name, color
+                            ))
+                        })?;
+                    }
+                }
+            }
         }
 
         // Validate logo exists
@@ -155,30 +162,34 @@ pub enum NavChildren {
     List(Vec<Navigation>),
 }
 
-static DEFAULT_THEME_COLOR: &str = "#445282";
+// static DEFAULT_THEME_COLOR: &str = "#445282";
 
-#[derive(Debug, Clone)]
-struct Colors {
-    main: String,
+#[derive(Debug, Clone, Serialize)]
+pub struct Themes {
+    light: HashMap<String, String>,
+    dark: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
-struct ColorsYaml {
-    main: Option<String>,
+struct ThemesYaml {
+    light: Option<HashMap<String, String>>,
+    dark: Option<HashMap<String, String>>,
 }
 
-impl From<ColorsYaml> for Colors {
-    fn from(other: ColorsYaml) -> Self {
-        Colors {
-            main: other.main.unwrap_or(DEFAULT_THEME_COLOR.to_owned()),
+impl From<ThemesYaml> for Themes {
+    fn from(other: ThemesYaml) -> Self {
+        Themes {
+            light: other.light.unwrap(),
+            dark: other.dark.unwrap(),
         }
     }
 }
 
-impl Default for Colors {
+impl Default for Themes {
     fn default() -> Self {
-        Colors {
-            main: DEFAULT_THEME_COLOR.to_owned(),
+        Themes {
+            light: HashMap::from([("main".to_string(), "#445282".to_string())]),
+            dark: HashMap::from([("main".to_string(), "#7085cc".to_string())]),
         }
     }
 }
@@ -254,7 +265,7 @@ pub struct Config {
     docs_dir: PathBuf,
     base_path: String,
     title: String,
-    colors: Colors,
+    themes: Themes,
     logo: Option<String>,
     navigation: Option<Vec<NavRule>>,
     build_mode: BuildMode,
@@ -292,10 +303,10 @@ impl Config {
             docs_dir: docgen_yaml.docs_dir(project_root),
             base_path: docgen_yaml.base_path.unwrap_or(String::from("/")),
             title: docgen_yaml.title,
-            colors: docgen_yaml
-                .colors
+            themes: docgen_yaml
+                .themes
                 .map(|c| c.into())
-                .unwrap_or(Colors::default()),
+                .unwrap_or(Themes::default()),
             logo: docgen_yaml
                 .logo
                 .map(|p| Link::path_to_uri_with_extension(&p))
@@ -377,18 +388,16 @@ impl Config {
     /// color.
     ///
     /// Must be a valid HEX color.
-    pub fn main_color(&self) -> Rgb {
-        let color = &self.colors.main;
+    // pub fn main_color(&self) -> Rgb {
+    //     let color = &self.colors.main;
 
-        // This was already validated
-        Rgb::from_hex_str(color).unwrap()
-    }
+    //     // This was already validated
+    //     Rgb::from_hex_str(color).unwrap()
+    // }
 
-    /// A lighter version of the main color, meant to be used in _dark_ mode.
-    pub fn main_color_dark(&self) -> Rgb {
-        let mut color = self.main_color();
-        color.lighten(25.0);
-        color
+    // /// A lighter version of the main color, meant to be used in _dark_ mode.
+    pub fn themes(&self) -> &Themes {
+        &self.themes
     }
 
     /// URI path to a logo that will show up at the top left next to the title
@@ -425,15 +434,18 @@ mod test {
         let yaml = indoc! {"
             ---
             title: The Title
-            colors:
-               main: not-a-color
+            themes:
+                light:
+                    main: not-a-color
+                dark:
+                    main: not-a-color
         "};
 
         let error = Config::from_yaml_str(Path::new(""), yaml).unwrap_err();
 
         assert!(
             format!("{}", error)
-                .contains("Invalid HEX color provided for colors.main in docgen.yaml"),
+                .contains("Invalid HEX color provided for themes.dark.main in docgen.yaml"),
             "Error message was: {}",
             error
         );

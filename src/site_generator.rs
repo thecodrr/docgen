@@ -4,35 +4,59 @@ use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use elasticlunr::Index;
-use once_cell::sync::OnceCell;
 use rayon::prelude::*;
 use serde::Serialize;
-use syntect::highlighting::ThemeSet;
-use syntect::html::{css_for_theme_with_class_style, ClassStyle};
 use walkdir::WalkDir;
 
-use crate::config::Config;
+use crate::config::{Config, Themes};
 use crate::navigation::{Link, Navigation};
 use crate::site::{BuildMode, SiteBackend};
-use crate::Directory;
+use crate::{Directory, Document};
 use crate::{Error, Result};
 
 static INCLUDE_DIR: &str = "_include";
 static HEAD_FILE: &str = "_head.html";
-static THEME_SET: OnceCell<ThemeSet> = OnceCell::new();
 
-macro_rules! export_file {
-    ($self: expr, $data: expr, $filename: expr, $dir: expr) => {
+macro_rules! export_asset {
+    ($self: expr, $filename: expr, $dir: expr, $scope: expr) => {{
+        let dest_filename = crate::ASSETS_MAP.get($filename).unwrap();
+        let data = crate::ASSETS
+            .get_file(dest_filename)
+            .expect("Failed to get")
+            .contents();
+
         $self
             .site
-            .add_file(&$self.config.out_dir().join($dir).join($filename), $data)
+            .add_file(
+                &$self.config.out_dir().join($dir).join(dest_filename),
+                data.to_vec(),
+            )
             .map_err(|e| {
                 Error::io(
                     e,
                     format!("Could not write {} to {} directory", $filename, $dir),
                 )
             })?;
-    };
+        Asset {
+            path: format!("{}/{}", $dir, dest_filename),
+            scope: $scope,
+        }
+    }};
+}
+
+#[derive(PartialEq)]
+enum AssetScope {
+    App,
+    Math,
+    Diagram,
+    Code,
+    Debug,
+    Ignore,
+}
+
+struct Asset {
+    scope: AssetScope,
+    path: String,
 }
 
 pub struct SiteGenerator<'a, T: SiteBackend> {
@@ -40,6 +64,8 @@ pub struct SiteGenerator<'a, T: SiteBackend> {
     root: Directory,
     site: Box<&'a T>,
     timestamp: String,
+    scripts: Vec<Asset>,
+    stylesheets: Vec<Asset>,
 }
 
 impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
@@ -55,10 +81,12 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             site: Box::new(site),
             config: site.config().clone(),
             timestamp: format!("{}", since_the_epoch.as_secs()),
+            scripts: vec![],
+            stylesheets: vec![],
         }
     }
 
-    pub fn run(&self) -> Result<()> {
+    pub fn run(&mut self) -> Result<()> {
         let nav_builder = Navigation::new(&self.config);
         let navigation = nav_builder.build_for(&self.root);
 
@@ -109,30 +137,45 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
     }
 
     /// Builds fixed assets required by Docgen
-    fn build_assets(&self) -> Result<()> {
-        let ts = THEME_SET.get_or_init(|| ThemeSet::load_defaults());
+    fn build_assets(&mut self) -> Result<()> {
+        self.scripts.push(export_asset!(
+            self,
+            "mermaid.min.js",
+            "assets",
+            AssetScope::Diagram
+        ));
 
-        // create dark color scheme css
-        let dark_theme =
-            css_for_theme_with_class_style(&ts.themes["Solarized (dark)"], ClassStyle::Spaced)
-                .unwrap();
-        let light_theme =
-            css_for_theme_with_class_style(&ts.themes["InspiredGitHub"], ClassStyle::Spaced)
-                .unwrap();
-
-        export_file!(self, crate::MERMAID_JS.into(), "mermaid.js", "assets");
-        export_file!(self, crate::ELASTIC_LUNR.into(), "elasticlunr.js", "assets");
+        self.scripts.push(export_asset!(
+            self,
+            "elasticlunr.min.js",
+            "assets",
+            AssetScope::App
+        ));
 
         if let BuildMode::Dev = self.config.build_mode() {
             // Livereload only in debug mode
-            export_file!(self, crate::LIVERELOAD_JS.into(), "livereload.js", "assets");
+            self.scripts.push(export_asset!(
+                self,
+                "livereload.min.js",
+                "assets",
+                AssetScope::Debug
+            ));
         }
 
-        export_file!(self, crate::KATEX_JS.into(), "katex.js", "assets");
-        export_file!(self, crate::APP_JS.into(), "docgen-app.js", "assets");
+        self.scripts.push(export_asset!(
+            self,
+            "katex.min.js",
+            "assets",
+            AssetScope::Math
+        ));
+
+        self.scripts
+            .push(export_asset!(self, "app.js", "assets", AssetScope::App));
 
         // Add fonts
-        for font in crate::KATEX_FONTS
+        for font in crate::ASSETS
+            .get_dir("fonts")
+            .unwrap()
             .entries()
             .iter()
             .filter_map(|f| f.as_file())
@@ -143,40 +186,59 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                         .config
                         .out_dir()
                         .join("assets")
-                        .join("katex-fonts")
+                        .join("fonts")
                         .join(font.path().file_name().unwrap()),
                     Vec::from(font.contents()),
                 )
                 .map_err(|e| Error::io(e, "Could not write katex fonts to assets directory"))?;
         }
 
-        export_file!(self, crate::NORMALIZE_CSS.into(), "normalize.css", "assets");
-        export_file!(self, crate::KATEX_CSS.into(), "katex.css", "assets");
-        export_file!(
+        self.stylesheets.push(export_asset!(
             self,
-            light_theme.into(),
-            "syntect-theme-light.css",
-            "assets"
-        );
-        export_file!(self, dark_theme.into(), "syntect-theme-dark.css", "assets");
+            "normalize.css",
+            "assets",
+            AssetScope::App
+        ));
 
-        let mut data = serde_json::Map::new();
-        data.insert(
-            "theme_main".to_string(),
-            serde_json::Value::String(self.config.main_color().to_css_string()),
-        );
-        data.insert(
-            "theme_main_dark".to_string(),
-            serde_json::Value::String(self.config.main_color_dark().to_css_string()),
-        );
+        self.stylesheets.push(export_asset!(
+            self,
+            "katex.min.css",
+            "assets",
+            AssetScope::Math
+        ));
 
-        let mut out = Vec::new();
+        self.stylesheets.push(export_asset!(
+            self,
+            "syntect_light_theme.css",
+            "assets",
+            AssetScope::Code
+        ));
 
-        crate::HANDLEBARS
-            .render_to_write("style.css", &data, &mut out)
-            .map_err(|e| Error::handlebars(e, "Could not write custom style sheet"))?;
+        self.stylesheets.push(export_asset!(
+            self,
+            "syntect_dark_theme.css",
+            "assets",
+            AssetScope::Ignore
+        ));
 
-        export_file!(self, out.into(), "docgen-style.css", "assets");
+        self.stylesheets
+            .push(export_asset!(self, "style.css", "assets", AssetScope::App));
+
+        // let mut data = serde_json::Map::new();
+        // data.insert(
+        //     "theme_main".to_string(),
+        //     serde_json::Value::String(self.config.main_color().to_css_string()),
+        // );
+        // data.insert(
+        //     "theme_main_dark".to_string(),
+        //     serde_json::Value::String(self.config.main_color_dark().to_css_string()),
+        // );
+
+        // let mut out = Vec::new();
+
+        // crate::HANDLEBARS
+        //     .render_to_write("style.css", &data, &mut out)
+        //     .map_err(|e| Error::handlebars(e, "Could not write custom style sheet"))?;
 
         Ok(())
     }
@@ -221,6 +283,18 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                     timestamp: &self.timestamp,
                     page_title,
                     head_include,
+                    footer: self.build_footer(&doc),
+                    header: self.build_header(&doc),
+                    themes: self.config.themes(),
+
+                    syntect_dark_theme: crate::ASSETS_MAP
+                        .get("syntect_dark_theme.css")
+                        .unwrap()
+                        .to_string(),
+                    syntect_light_theme: crate::ASSETS_MAP
+                        .get("syntect_light_theme.css")
+                        .unwrap()
+                        .to_string(),
                 };
 
                 let mut out = Vec::new();
@@ -228,6 +302,24 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                 crate::HANDLEBARS
                     .render_to_write("page", &data, &mut out)
                     .map_err(|e| Error::handlebars(e, "Could not render template"))?;
+
+                if let BuildMode::Release = self.config.build_mode() {
+                    out = minify_html::minify(
+                        &mut out,
+                        &minify_html::Cfg {
+                            keep_closing_tags: true,
+                            keep_comments: false,
+                            keep_html_and_head_opening_tags: true,
+                            minify_css: true,
+                            minify_js: true,
+                            remove_processing_instructions: true,
+                            remove_bangs: true,
+                            keep_spaces_between_attributes: false,
+                            do_not_minify_doctype: false,
+                            ensure_spec_compliant_unquoted_attribute_values: false,
+                        },
+                    );
+                }
 
                 self.site
                     .add_file(&doc.destination(self.config.out_dir()), out.into())?;
@@ -244,7 +336,7 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
     }
 
     fn build_search_index(&self, root: &Directory) -> Result<()> {
-        let mut index = Index::new(&["title", "uri", "body"]);
+        let mut index = Index::new(&["title", "uri", "body", "preview"], Some(vec!["body"]));
 
         self.build_search_index_for_dir(root, &mut index);
 
@@ -266,12 +358,33 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
                     &doc.title(),
                     &doc.uri_path().as_str(),
                     doc.markdown_section(),
+                    doc.preview(),
                 ],
             );
         }
         for dir in &root.dirs {
             self.build_search_index_for_dir(&dir, index);
         }
+    }
+
+    fn build_header(&self, doc: &Document) -> String {
+        compile_assets(&self.stylesheets, doc, &|asset: &Asset| {
+            format!(
+                "<link rel=\"stylesheet\" type=\"text/css\" href=\"{}{}\">",
+                self.config.base_path(),
+                asset.path
+            )
+        })
+    }
+
+    fn build_footer(&self, doc: &Document) -> String {
+        compile_assets(&self.scripts, doc, &|asset: &Asset| {
+            format!(
+                "<script async defer type=\"text/javascript\" src=\"{}{}\"></script>",
+                self.config.base_path(),
+                asset.path
+            )
+        })
     }
 }
 
@@ -289,4 +402,37 @@ pub struct TemplateData<'a> {
     pub project_title: String,
     pub build_mode: String,
     pub timestamp: &'a str,
+    pub header: String,
+    pub footer: String,
+    pub themes: &'a Themes,
+
+    pub syntect_light_theme: String,
+    pub syntect_dark_theme: String,
+}
+
+fn compile_assets(
+    assets: &Vec<Asset>,
+    doc: &Document,
+    generate_html: &dyn Fn(&Asset) -> String,
+) -> String {
+    assets
+        .into_iter()
+        .filter_map(|script| {
+            let include = match script.scope {
+                AssetScope::Debug | AssetScope::App => true,
+                AssetScope::Code => doc.markdown.blocks.contains("code"),
+                AssetScope::Diagram => doc.markdown.blocks.contains("diagram"),
+                AssetScope::Math => doc.markdown.blocks.contains("math"),
+                _ => false,
+            };
+
+            if include {
+                Some(script)
+            } else {
+                None
+            }
+        })
+        .map(|asset| generate_html(asset))
+        .collect::<Vec<String>>()
+        .join("\n")
 }

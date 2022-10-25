@@ -7,4 +7,5 @@ ParsedMarkdown {
     html: "<p>Look at this :stop MORE</p>\n",
     headings: [],
     links: [],
+    blocks: {},
 }

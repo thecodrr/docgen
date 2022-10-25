@@ -15,7 +15,10 @@ impl Extension for MermaidBlock {
                 let lang = inner.split(' ').next().unwrap();
                 if lang == "mermaid" {
                     return (
-                        Some(vec![Output::Event(html!("<div class=\"mermaid\">\n"))]),
+                        Some(vec![
+                            Output::Event(html!("<div class=\"mermaid\">\n")),
+                            Output::Block("diagram"),
+                        ]),
                         true,
                     );
                 }

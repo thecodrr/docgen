@@ -24,7 +24,7 @@ mod site;
 mod site_generator;
 mod watcher;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -42,18 +42,18 @@ use handlebars::Handlebars;
 use include_dir::{include_dir, Dir};
 use navigation::Link;
 
-static APP_JS: &str = include_str!("assets/app.js");
-static MERMAID_JS: &str = include_str!("assets/mermaid.min.js");
-static ELASTIC_LUNR: &str = include_str!("assets/elasticlunr.min.js");
-static LIVERELOAD_JS: &str = include_str!("assets/livereload.min.js");
-static KATEX_JS: &str = include_str!("assets/katex.min.js");
-
-static NORMALIZE_CSS: &str = include_str!("assets/normalize.css");
-static KATEX_CSS: &str = include_str!("assets/katex.min.css");
-
-static KATEX_FONTS: Dir = include_dir!("$CARGO_MANIFEST_DIR/src/assets/katex-fonts");
+static ASSETS: Dir = include_dir!("$CARGO_MANIFEST_DIR/dist/");
 
 lazy_static! {
+    pub static ref ASSETS_MAP: HashMap<String, String> = {
+        let assets_map = ASSETS
+            .get_file("assets_map.json")
+            .unwrap()
+            .contents_utf8()
+            .unwrap();
+
+        serde_json::from_str::<HashMap<String, String>>(assets_map).unwrap()
+    };
     pub static ref HANDLEBARS: Handlebars<'static> = {
         let mut handlebars = Handlebars::new();
 
@@ -64,16 +64,10 @@ lazy_static! {
             .register_template_string("navigation", include_str!("../templates/navigation.html"))
             .unwrap();
         handlebars
-            .register_template_string("search", include_str!("../templates/search.html"))
-            .unwrap();
-        handlebars
             .register_template_string(
                 "nested_navigation",
                 include_str!("../templates/nested_navigation.html"),
             )
-            .unwrap();
-        handlebars
-            .register_template_string("style.css", include_str!("../templates/style.css"))
             .unwrap();
 
         handlebars
@@ -231,6 +225,12 @@ impl Document {
 
     fn markdown_section(&self) -> &str {
         frontmatter::without(&self.raw)
+    }
+
+    fn preview(&self) -> &str {
+        let raw = frontmatter::without(&self.raw);
+        let to = if raw.len() > 100 { 100 } else { raw.len() };
+        &raw[0..to]
     }
 
     fn headings(&self) -> &[Heading] {

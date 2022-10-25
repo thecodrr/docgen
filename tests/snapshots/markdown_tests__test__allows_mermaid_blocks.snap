@@ -7,4 +7,7 @@ ParsedMarkdown {
     html: "<div class=\"mermaid\">\ngraph TD;\n    A--&gt;B;\n    A--&gt;C;\n</div>",
     headings: [],
     links: [],
+    blocks: {
+        "diagram",
+    },
 }

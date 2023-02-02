@@ -5,6 +5,7 @@ info: "\n[an link](https://www.google.com)\n"
 ---
 ParsedMarkdown {
     html: "<p><a href=\"https://www.google.com\">an link</a></p>\n",
+    preview: "an link",
     headings: [],
     links: [
         Link {

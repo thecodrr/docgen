@@ -3,7 +3,6 @@ use std::fs;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
-use colorsys::Rgb;
 use http::Uri;
 use serde::{Deserialize, Serialize};
 
@@ -15,11 +14,12 @@ use crate::{Error, Result};
 #[derive(Debug, Clone, Deserialize)]
 struct DocgenYaml {
     title: String,
+    subtitle: Option<String>,
     port: Option<u16>,
-    // colors: Option<ColorsYaml>,
-    themes: Option<ThemesYaml>,
     logo: Option<PathBuf>,
     navigation: Option<Vec<Navigation>>,
+    footer: Option<Footer>,
+    edit_root: Option<String>,
     base_path: Option<String>,
     docs_dir: Option<String>,
 }
@@ -44,23 +44,6 @@ impl DocgenYaml {
         // exists.
         let docs_dir_path = self.docs_dir(project_root);
 
-        // Validate theme colors
-        if let Some(themes) = &self.themes {
-            for theme in [&themes.dark, &themes.light] {
-                if let Some(theme) = theme {
-                    for (name, color) in theme {
-                        Rgb::from_hex_str(color.as_str()).map_err(|_e| {
-                            Error::new(format!(
-                                "Invalid HEX color provided for \
-                                themes.dark.{} in docgen.yaml.\nFound '{}'",
-                                name, color
-                            ))
-                        })?;
-                    }
-                }
-            }
-        }
-
         // Validate logo exists
         if let Some(p) = &self.logo {
             let location = docs_dir_path.join("_include").join(p);
@@ -71,6 +54,12 @@ impl DocgenYaml {
                     location.display()
                 )));
             }
+        }
+
+        // Validate edit root
+        if let Some(edit_root) = &self.edit_root {
+            Uri::try_from(edit_root)
+                .map_err(|x| Error::new(format!("Invalid edit root url. Error: {:?}", x)))?;
         }
 
         // Validate navigation paths exist
@@ -100,7 +89,7 @@ impl DocgenYaml {
                     }
                     NavChildren::List(navs) => {
                         for nav in navs {
-                            validate_level(&nav, config, project_root)?;
+                            validate_level(nav, config, project_root)?;
                         }
                     }
                 }
@@ -111,7 +100,7 @@ impl DocgenYaml {
 
         if let Some(navs) = &self.navigation {
             for nav in navs {
-                validate_level(nav, &self, &project_root)?;
+                validate_level(nav, self, &project_root)?;
             }
         }
 
@@ -149,10 +138,30 @@ impl DocgenYaml {
         doc_root_path
     }
 }
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct Navigation {
     pub path: PathBuf,
     pub children: Option<NavChildren>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Footer {
+    pub groups: Option<Vec<FooterGroup>>,
+    pub copyright: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct FooterGroup {
+    pub title: String,
+    pub links: Vec<FooterLink>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct FooterLink {
+    pub href: String,
+    pub title: String,
+    pub external: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -166,32 +175,8 @@ pub enum NavChildren {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Themes {
-    light: HashMap<String, String>,
-    dark: HashMap<String, String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Default)]
-struct ThemesYaml {
-    light: Option<HashMap<String, String>>,
-    dark: Option<HashMap<String, String>>,
-}
-
-impl From<ThemesYaml> for Themes {
-    fn from(other: ThemesYaml) -> Self {
-        Themes {
-            light: other.light.unwrap(),
-            dark: other.dark.unwrap(),
-        }
-    }
-}
-
-impl Default for Themes {
-    fn default() -> Self {
-        Themes {
-            light: HashMap::from([("main".to_string(), "#445282".to_string())]),
-            dark: HashMap::from([("main".to_string(), "#7085cc".to_string())]),
-        }
-    }
+    pub light: HashMap<String, String>,
+    pub dark: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -264,13 +249,15 @@ pub struct Config {
     out_dir: PathBuf,
     docs_dir: PathBuf,
     base_path: String,
+    edit_root: Option<String>,
     title: String,
-    themes: Themes,
+    subtitle: String,
     logo: Option<String>,
     navigation: Option<Vec<NavRule>>,
     build_mode: BuildMode,
     preview_addr: SocketAddr,
     livereload_addr: SocketAddr,
+    footer: Option<Footer>,
 }
 
 impl Config {
@@ -303,10 +290,9 @@ impl Config {
             docs_dir: docgen_yaml.docs_dir(project_root),
             base_path: docgen_yaml.base_path.unwrap_or(String::from("/")),
             title: docgen_yaml.title,
-            themes: docgen_yaml
-                .themes
-                .map(|c| c.into())
-                .unwrap_or(Themes::default()),
+            subtitle: docgen_yaml.subtitle.unwrap_or(String::from("DOCS")),
+            edit_root: docgen_yaml.edit_root,
+            footer: docgen_yaml.footer,
             logo: docgen_yaml
                 .logo
                 .map(|p| Link::path_to_uri_with_extension(&p))
@@ -321,8 +307,18 @@ impl Config {
     }
 
     /// The title of the project
+    pub fn footer(&self) -> &Option<Footer> {
+        &self.footer
+    }
+
+    /// The title of the project
     pub fn title(&self) -> &str {
         &self.title
+    }
+
+    /// The title of the project
+    pub fn subtitle(&self) -> &str {
+        &self.subtitle
     }
 
     /// The root directory of the project - the folder containing the docgen.yaml file.
@@ -341,6 +337,7 @@ impl Config {
     }
 
     /// The directory that contains all the Markdown documentation
+    #[inline]
     pub fn base_path(&self) -> &str {
         &self.base_path
     }
@@ -384,25 +381,24 @@ impl Config {
         self.build_mode = mode;
     }
 
-    /// The main theme color. Other shades are computed based off of this
-    /// color.
-    ///
-    /// Must be a valid HEX color.
-    // pub fn main_color(&self) -> Rgb {
-    //     let color = &self.colors.main;
-
-    //     // This was already validated
-    //     Rgb::from_hex_str(color).unwrap()
-    // }
-
-    // /// A lighter version of the main color, meant to be used in _dark_ mode.
-    pub fn themes(&self) -> &Themes {
-        &self.themes
-    }
-
     /// URI path to a logo that will show up at the top left next to the title
     pub fn logo(&self) -> Option<&str> {
         self.logo.as_deref()
+    }
+
+    /// URI path to a logo that will show up at the top left next to the title
+    pub fn build_edit_link(&self, doc_path: &PathBuf) -> Option<String> {
+        if let Some(edit_root) = &self.edit_root {
+            return Some(
+                Path::new(edit_root)
+                    .join(self.docs_dir.file_name().unwrap())
+                    .join(doc_path)
+                    .as_os_str()
+                    .to_string_lossy()
+                    .to_string(),
+            );
+        }
+        None
     }
 }
 
@@ -428,33 +424,6 @@ mod test {
     use super::*;
 
     extern crate indoc;
-
-    #[test]
-    fn validate_colors() {
-        let yaml = indoc! {"
-            ---
-            title: The Title
-            themes:
-                light:
-                    main: not-a-color
-                dark:
-                    main: not-a-color
-        "};
-
-        let error = Config::from_yaml_str(Path::new(""), yaml).unwrap_err();
-
-        assert!(
-            format!("{}", error)
-                .contains("Invalid HEX color provided for themes.dark.main in docgen.yaml"),
-            "Error message was: {}",
-            error
-        );
-        assert!(
-            format!("{}", error).contains("Found 'not-a-color'"),
-            "Error message was: {}",
-            error
-        );
-    }
 
     #[test]
     fn validate_logo() {

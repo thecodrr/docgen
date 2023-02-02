@@ -1,0 +1,32 @@
+---
+source: src/navigation.rs
+description: Manual menu nested
+---
+[
+    Link {
+        path: "/one",
+        title: "One",
+        children: [],
+        index: 4294967295,
+    },
+    Link {
+        path: "/child/",
+        title: "Nested Root",
+        children: [
+            Link {
+                path: "/child/nested/",
+                title: "Nested Root",
+                children: [
+                    Link {
+                        path: "/child/nested/four",
+                        title: "Four",
+                        children: [],
+                        index: 4294967295,
+                    },
+                ],
+                index: 4294967295,
+            },
+        ],
+        index: 4294967295,
+    },
+]

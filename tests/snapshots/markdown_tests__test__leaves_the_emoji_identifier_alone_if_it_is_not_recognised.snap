@@ -5,6 +5,7 @@ info: "Look at this :idonotexist:"
 ---
 ParsedMarkdown {
     html: "<p>Look at this :idonotexist:</p>\n",
+    preview: "Look at this :idonotexist:",
     headings: [],
     links: [],
     blocks: {},

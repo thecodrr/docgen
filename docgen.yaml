@@ -1,10 +1,7 @@
 ---
 title: Docgen
-themes:
-  light:
-    main: "#6875f5"
-  dark:
-    main: "#868dd7"
+subtitle: DOCS
+edit_root: https://github.com/thecodrr/docgen/blob/master/
 
 navigation:
   - path: docs/installing.md

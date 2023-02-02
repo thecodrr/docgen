@@ -1,14 +1,10 @@
+use crate::config::Config;
+use crate::site_generator::SiteGenerator;
+use crate::Document;
+use crate::{Error, Result};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
-
-use crate::broken_links_checker;
-use crate::config::Config;
-use crate::docs_finder;
-use crate::site_generator::SiteGenerator;
-use crate::Directory;
-use crate::{Error, Result};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 /// Describes the mode we should build the site in, meaning
@@ -45,16 +41,6 @@ impl Site<InMemorySite> {
             config,
         }
     }
-
-    #[cfg(test)]
-    /// Don't load the site from memory - instead provide the loaded directory
-    /// state manually. Used only in testing.
-    pub fn with_root(root: Directory, config: Config) -> Site<InMemorySite> {
-        Site {
-            backend: InMemorySite::with_root(root, config.clone()),
-            config,
-        }
-    }
 }
 
 impl Site<DiskBackedSite> {
@@ -67,163 +53,95 @@ impl Site<DiskBackedSite> {
 }
 
 impl<B: SiteBackend> Site<B> {
-    pub fn root(&self) -> Directory {
-        self.backend.root()
-    }
-
-    pub fn reset(&self) -> Result<()> {
+    pub fn reset(&mut self) -> Result<()> {
         self.backend.reset()
     }
 
-    pub fn build(&self) -> Result<()> {
-        self.backend.build()
+    pub fn build(&mut self, config: Config, root: &Vec<Document>) -> Result<()> {
+        self.backend.build(config, root)
     }
 
-    pub fn rebuild(&self) -> Result<()> {
+    pub fn rebuild(&mut self, config: Config, root: &Vec<Document>) -> Result<()> {
         self.backend.reset()?;
-        self.backend.build()
-    }
-
-    pub fn check_dead_links(&self) -> Result<()> {
-        broken_links_checker::run(&self)
+        self.backend.build(config, root)
     }
 }
 
 pub trait SiteBackend: Send + Sync {
-    fn root(&self) -> Directory;
     fn config(&self) -> &Config;
     /// Adds the rendered content for a given path
-    fn add_file(&self, path: &Path, content: Vec<u8>) -> std::io::Result<()>;
-    fn copy_file(&self, from: &Path, to: &Path) -> std::io::Result<()>;
+    fn add_file(&mut self, path: &Path, content: &Vec<u8>) -> std::io::Result<()>;
+    fn copy_file(&mut self, from: &Path, to: &Path) -> std::io::Result<()>;
     /// Reads the rendered output of the specified path
     fn read_path(&self, path: &Path) -> Option<Vec<u8>>;
     /// Says if we have rendered the specified file
     fn has_file(&self, path: &Path) -> bool;
     /// Clears the rendered output, and reloads the documentation from disk into memory
-    fn reset(&self) -> Result<()>;
+    fn reset(&mut self) -> Result<()>;
     /// Renders the loaded documentation into memory
-    fn build(&self) -> Result<()>;
+    fn build(&mut self, config: Config, root: &Vec<Document>) -> Result<()>;
     fn list_files(&self) -> Vec<PathBuf>;
-}
-
-impl<T: SiteBackend> SiteBackend for &T {
-    fn root(&self) -> Directory {
-        (*self).root()
-    }
-    fn config(&self) -> &Config {
-        (*self).config()
-    }
-    fn add_file(&self, path: &Path, content: Vec<u8>) -> std::io::Result<()> {
-        (*self).add_file(path, content)
-    }
-    fn copy_file(&self, from: &Path, to: &Path) -> std::io::Result<()> {
-        (*self).copy_file(to, from)
-    }
-    fn read_path(&self, path: &Path) -> Option<Vec<u8>> {
-        (*self).read_path(path)
-    }
-    fn has_file(&self, path: &Path) -> bool {
-        (*self).has_file(path)
-    }
-    fn reset(&self) -> Result<()> {
-        (*self).reset()
-    }
-    fn build(&self) -> Result<()> {
-        (*self).build()
-    }
-    fn list_files(&self) -> Vec<PathBuf> {
-        (*self).list_files()
-    }
+    fn in_memory(&self) -> bool;
 }
 
 #[derive(Debug)]
 pub struct InMemorySite {
     config: Config,
-    content: RwLock<InMemoryContent>,
-}
-
-#[derive(Debug)]
-struct InMemoryContent {
-    pub root: Directory,
-    pub rendered: HashMap<PathBuf, Vec<u8>>,
+    rendered: HashMap<PathBuf, Vec<u8>>,
 }
 
 impl InMemorySite {
     pub fn new(config: Config) -> Self {
         InMemorySite {
-            content: RwLock::new(InMemoryContent {
-                root: docs_finder::find(&config),
-                rendered: HashMap::new(),
-            }),
-            config,
-        }
-    }
-
-    #[cfg(test)]
-    pub fn with_root(root: Directory, config: Config) -> Self {
-        InMemorySite {
-            content: RwLock::new(InMemoryContent {
-                root,
-                rendered: HashMap::new(),
-            }),
+            rendered: HashMap::new(),
             config,
         }
     }
 }
 
 impl SiteBackend for InMemorySite {
-    fn root(&self) -> Directory {
-        let content = self.content.read().unwrap();
-        content.root.clone()
+    fn in_memory(&self) -> bool {
+        true
     }
 
     fn config(&self) -> &Config {
         &self.config
     }
 
-    fn add_file(&self, path: &Path, html: Vec<u8>) -> std::io::Result<()> {
-        let mut content = self.content.write().unwrap();
+    fn add_file(&mut self, path: &Path, html: &Vec<u8>) -> std::io::Result<()> {
+        // let mut content = self.content.write().unwrap();
 
         let path = path.strip_prefix(self.config.out_dir()).unwrap();
 
-        content.rendered.insert(path.to_owned(), html.into());
+        self.rendered.insert(path.to_owned(), html.to_vec());
         Ok(())
     }
 
-    fn copy_file(&self, from: &Path, to: &Path) -> std::io::Result<()> {
+    fn copy_file(&mut self, from: &Path, to: &Path) -> std::io::Result<()> {
         let content = fs::read(from)?;
-        self.add_file(to, content)
+        self.add_file(to, &content)
     }
 
     fn read_path(&self, path: &Path) -> Option<Vec<u8>> {
-        let content = self.content.read().unwrap();
-        content.rendered.get(path).map(|s| s.clone())
+        self.rendered.get(path).map(|s| s.clone())
     }
 
     fn has_file(&self, path: &Path) -> bool {
-        let content = self.content.read().unwrap();
-        content.rendered.contains_key(path)
+        self.rendered.contains_key(path)
     }
 
-    fn reset(&self) -> Result<()> {
-        let mut content = self.content.write().unwrap();
-        content.rendered = HashMap::new();
-        content.root = docs_finder::find(&self.config);
-
+    fn reset(&mut self) -> Result<()> {
+        self.rendered = HashMap::new();
         Ok(())
     }
 
-    fn build(&self) -> Result<()> {
-        let mut generator = SiteGenerator::new(self);
-
-        generator.run()
+    fn build(&mut self, config: Config, root: &Vec<Document>) -> Result<()> {
+        let mut generator = SiteGenerator::new(config, root);
+        generator.run(self)
     }
 
     fn list_files(&self) -> Vec<PathBuf> {
-        let content = self.content.read().unwrap();
-
-        content
-            .rendered
+        self.rendered
             .keys()
             .map(|p| p.to_owned())
             .collect::<Vec<_>>()
@@ -232,15 +150,11 @@ impl SiteBackend for InMemorySite {
 
 pub struct DiskBackedSite {
     config: Config,
-    root: Directory,
 }
 
 impl DiskBackedSite {
     pub fn new(config: Config) -> Self {
-        DiskBackedSite {
-            root: docs_finder::find(&config),
-            config,
-        }
+        DiskBackedSite { config }
     }
 
     pub fn create_dir(&self) -> Result<()> {
@@ -273,15 +187,15 @@ impl DiskBackedSite {
 }
 
 impl SiteBackend for DiskBackedSite {
-    fn root(&self) -> Directory {
-        self.root.clone()
+    fn in_memory(&self) -> bool {
+        false
     }
 
     fn config(&self) -> &Config {
         &self.config
     }
 
-    fn add_file(&self, path: &Path, content: Vec<u8>) -> std::io::Result<()> {
+    fn add_file(&mut self, path: &Path, content: &Vec<u8>) -> std::io::Result<()> {
         fs::create_dir_all(
             self.config
                 .out_dir()
@@ -293,7 +207,7 @@ impl SiteBackend for DiskBackedSite {
         Ok(())
     }
 
-    fn copy_file(&self, from: &Path, to: &Path) -> std::io::Result<()> {
+    fn copy_file(&mut self, from: &Path, to: &Path) -> std::io::Result<()> {
         fs::create_dir_all(
             self.config
                 .out_dir()
@@ -315,17 +229,16 @@ impl SiteBackend for DiskBackedSite {
         self.config.out_dir().join(path).exists()
     }
 
-    fn reset(&self) -> Result<()> {
+    fn reset(&mut self) -> Result<()> {
         self.delete_dir()?;
         self.create_dir()?;
 
         Ok(())
     }
 
-    fn build(&self) -> Result<()> {
-        let mut generator = SiteGenerator::new(self);
-
-        generator.run()
+    fn build(&mut self, config: Config, root: &Vec<Document>) -> Result<()> {
+        let mut generator = SiteGenerator::new(config, root);
+        generator.run(self)
     }
 
     fn list_files(&self) -> Vec<PathBuf> {
@@ -348,9 +261,9 @@ mod test {
 
         let config = Config::from_yaml_str(Path::new("/workspace"), "---\ntitle: Title").unwrap();
 
-        let site = InMemorySite::new(config);
+        let mut site = InMemorySite::new(config);
 
-        site.add_file(&path, content.into()).unwrap();
+        site.add_file(&path, &content.into()).unwrap();
 
         let uri = Path::new("index.html");
 

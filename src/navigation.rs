@@ -1,8 +1,9 @@
 use crate::config::{Config, DirIncludeRule, NavRule};
-use crate::Directory;
+use crate::Document;
 use serde::Serialize;
 
-use std::ffi::OsStr;
+use std::collections::HashMap;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
 pub struct Navigation<'a> {
@@ -15,11 +16,63 @@ impl<'a> Navigation<'a> {
     }
 
     /// Builds a navigation tree given a root directory
-    pub fn build_for(&self, dir: &Directory) -> Vec<Link> {
+    pub fn build_for(&self, docs: &[Document]) -> Vec<Link> {
         match &self.config.navigation() {
-            None => dir.links(false),
-            Some(nav) => self.customize(nav, &dir.links(true)),
+            None => self.links(docs, false),
+            Some(nav) => self.customize(&nav, &self.links(docs, true)),
         }
+    }
+
+    /// Build a nested hierarchy from a flat list of documents
+    ///
+    /// TODO I don't like recursive algorithms. Is there a way to represent
+    /// the navigation without nesting?
+    pub fn links(&self, docs: &[Document], include_root_readme: bool) -> Vec<Link> {
+        let base_path = self.config.base_path();
+        // This algorithm starts from bottom up and collects all the documents
+        // under a specific subdirectory and stores it temporarily inside a
+        // vector. This goes on until we reach the root of any top directory
+        // wherein, we take the collected entires and add them as children to
+        // the directory link.
+        let mut directories = HashMap::new();
+        let index_file_name = OsStr::new("index.html");
+        directories.insert(String::from(base_path), vec![]);
+
+        for doc in docs {
+            let uri_path = &doc.uri_path;
+            let html_path = &doc.html_path;
+            let title = &doc.title;
+            let parent_path = doc.parent.display().to_string();
+
+            let is_root_readme = html_path.file_name() == Some(index_file_name);
+            let is_top_most = uri_path == base_path;
+
+            let mut link = Link {
+                title: title.to_string(),
+                path: uri_path.to_string(),
+                children: vec![],
+                index: doc.index,
+            };
+
+            if is_top_most && is_root_readme {
+                if include_root_readme {
+                    directories
+                        .entry(parent_path)
+                        .or_insert(vec![])
+                        .insert(0, link);
+                }
+            } else if is_root_readme {
+                let children = directories.entry(uri_path.to_string()).or_insert(vec![]);
+                children.sort_by(|a, b| a.index.cmp(&b.index));
+
+                link.children.append(children);
+                directories.entry(parent_path).or_insert(vec![]).push(link);
+            } else {
+                directories.entry(parent_path).or_insert(vec![]).push(link);
+            }
+        }
+
+        directories.remove(&String::from(base_path)).unwrap()
     }
 
     /// Customizes the navigation tree given some rules provided through the
@@ -35,11 +88,10 @@ impl<'a> Navigation<'a> {
     /// not necessarily a direct child of its parent. It could be that links
     /// under a directory actually point to a parent's sibling, or to somewhere
     /// else in the tree.
-    fn customize(&self, rules: &[NavRule], default: &[Link]) -> Vec<Link> {
+    pub fn customize(&self, rules: &[NavRule], default: &[Link]) -> Vec<Link> {
         let mut links = vec![];
 
         let root_path_rule = NavRule::File(PathBuf::from("/"));
-
         for rule in rules {
             let rule = if rule
                 .is_default_readme_rule(&self.config.project_root(), &self.config.docs_dir())
@@ -87,15 +139,13 @@ impl<'a> Navigation<'a> {
     /// Matches a path provided in a NavRule to a Link. Recursively searches through
     /// the link children to find a match.
     fn find_matching_link(&self, path: &Path, links: &[Link]) -> Option<Link> {
+        let mut without_docs_part = path.components();
+        let _ = without_docs_part.next();
+        let doc_path = Link::path_to_uri(without_docs_part.as_path());
+
         let search_result = links.iter().find(|link| {
-            let mut without_docs_part = path.components();
-            let _ = without_docs_part.next();
-
             let link_path = link.path.strip_prefix(self.config.base_path()).unwrap();
-
-            let doc_path = Link::path_to_uri(without_docs_part.as_path());
-
-            link_path.trim_start_matches("/") == doc_path.trim_start_matches("/")
+            link_path.trim_end_matches("/") == doc_path
         });
 
         match search_result {
@@ -118,6 +168,7 @@ pub struct Link {
     pub path: String,
     pub title: String,
     pub children: Vec<Link>,
+    pub index: u32,
 }
 
 impl Link {
@@ -125,56 +176,74 @@ impl Link {
         let mut tmp = path.to_owned();
 
         // Default to stripping .html extensions
-        tmp.set_extension("");
-
-        if tmp.file_name() == Some(OsStr::new("index")) {
-            tmp = tmp
-                .parent()
-                .map(|p| p.to_owned())
-                .unwrap_or_else(|| PathBuf::from(""));
+        if tmp.file_name() == Some(OsStr::new("index.html")) {
+            tmp.pop();
+            tmp = tmp.join("")
+        } else {
+            tmp.set_extension("");
         }
 
-        // Need to force forward slashes here, since URIs will always
-        // work the same across all platforms.
-        let uri_path = tmp
-            .components()
-            .into_iter()
-            .map(|c| format!("{}", c.as_os_str().to_string_lossy()))
-            .collect::<Vec<_>>()
-            .join("/");
+        let path_with_forward_slash = if cfg!(windows) {
+            let mut p = OsString::new();
 
-        format!("{}", uri_path.as_str().trim_start_matches("/"))
+            for (i, component) in tmp.components().enumerate() {
+                if i > 0 {
+                    p.push("/");
+                }
+                p.push(component);
+            }
+            p
+        } else {
+            tmp.as_os_str().to_os_string()
+        };
+
+        path_with_forward_slash
+            .to_str()
+            .unwrap()
+            .trim_start_matches("/")
+            .to_string()
     }
 
     pub fn path_to_uri_with_extension(path: &Path) -> String {
         let mut tmp = path.to_owned();
 
-        if tmp.file_name() == Some(OsStr::new("index")) {
-            tmp = tmp
-                .parent()
-                .map(|p| p.to_owned())
-                .unwrap_or_else(|| PathBuf::from(""));
+        // Default to stripping .html extensions
+        if tmp.file_name() == Some(OsStr::new("index.html")) {
+            tmp.set_file_name("");
         }
 
-        // Need to force forward slashes here, since URIs will always
-        // work the same across all platforms.
-        let uri_path = tmp
-            .components()
-            .into_iter()
-            .map(|c| format!("{}", c.as_os_str().to_string_lossy()))
-            .collect::<Vec<_>>()
-            .join("/");
+        let path_with_forward_slash = if cfg!(windows) {
+            let mut p = OsString::new();
 
-        format!("{}", uri_path.as_str().trim_start_matches("/"))
+            for (i, component) in tmp.components().enumerate() {
+                if i > 0 {
+                    p.push("/");
+                }
+                p.push(component);
+            }
+            p
+        } else {
+            tmp.as_os_str().to_os_string()
+        };
+
+        path_with_forward_slash
+            .to_str()
+            .unwrap()
+            .trim_start_matches("/")
+            .to_string()
     }
 }
 
 #[cfg(test)]
 mod test {
+    use insta::assert_debug_snapshot;
+    use rayon::slice::ParallelSliceMut;
+
     use super::*;
     use std::collections::BTreeMap;
     use std::path::Path;
 
+    use crate::docs_finder::document_sort;
     use crate::Document;
 
     fn page(path: &str, name: &str, base_path: Option<&str>) -> Document {
@@ -196,234 +265,154 @@ mod test {
     }
 
     #[test]
-    fn basic() {
+    fn path_to_uri_test() {
+        #[cfg(target_os = "windows")]
+        {
+            assert_eq!(
+                Link::path_to_uri(&Path::new("docs\\windows\\hello\\world.html")),
+                String::from("docs/windows/hello/world")
+            );
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            assert_eq!(
+                Link::path_to_uri(&Path::new("docs/windows/hello/world.html")),
+                String::from("docs/windows/hello/world")
+            );
+
+            assert_eq!(
+                Link::path_to_uri(&Path::new("/child/child_of_child/index.html")),
+                String::from("child/child_of_child/")
+            );
+
+            assert_eq!(
+                Link::path_to_uri(&Path::new("child/index.html")),
+                String::from("child/")
+            );
+
+            // child/index.html
+        }
+    }
+
+    #[test]
+    fn path_to_uri_with_extension_test() {
+        #[cfg(target_os = "windows")]
+        {
+            assert_eq!(
+                Link::path_to_uri_with_extension(&Path::new("docs\\windows\\hello\\world.html")),
+                String::from("docs/windows/hello/world.html")
+            );
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            assert_eq!(
+                Link::path_to_uri_with_extension(&Path::new("docs/windows/hello/world.html")),
+                String::from("docs/windows/hello/world.html")
+            );
+        }
+    }
+
+    #[test]
+    fn basic_navigation() {
         let config = config(None);
-        let root = Directory {
-            path: config.docs_dir().to_path_buf(),
-            docs: vec![
-                page("README.md", "Getting Started", None),
-                page("one.md", "One", None),
-                page("two.md", "Two", None),
-            ],
-            dirs: vec![Directory {
-                path: config.docs_dir().join("child"),
-                docs: vec![
-                    page("child/README.md", "Nested Root", None),
-                    page("child/three.md", "Three", None),
-                ],
-                dirs: vec![],
-            }],
-        };
+        let mut docs = vec![
+            page("README.md", "Getting Started", None),
+            page("child/child_of_child/README.md", "Child of Child", None),
+            page("child/README.md", "Nested Root", None),
+            page("1.one.md", "One", None),
+            page("2.two.md", "Two", None),
+            page("4.four.md", "Four", None),
+            page("child/3.three.md", "Three", None),
+            page("child/5.five.md", "Five", None),
+            page("child/child_of_child/8.eight.md", "Eight", None),
+            page("child/child_of_child/7.seven.md", "Seven", None),
+            page("child/child_of_child/ASASSA.md", "Child of Child", None),
+            page("child/child_of_child/6.six.md", "Six", None),
+        ];
+        docs.par_sort_by(document_sort);
 
-        let navigation = Navigation::new(&config);
-
-        assert_eq!(
-            navigation.build_for(&root),
-            vec![
-                Link {
-                    path: String::from("/child"),
-                    title: String::from("Nested Root"),
-                    children: vec![Link {
-                        path: String::from("/child/three"),
-                        title: String::from("Three"),
-                        children: vec![]
-                    }]
-                },
-                Link {
-                    path: String::from("/one"),
-                    title: String::from("One"),
-                    children: vec![]
-                },
-                Link {
-                    path: String::from("/two"),
-                    title: String::from("Two"),
-                    children: vec![]
-                },
-            ]
-        )
+        insta::with_settings!({
+            description => "Basic navigation",
+            omit_expression => true // do not include the default expression
+        }, {
+            let navigation = Navigation::new(&config);
+            let result = navigation.build_for(&docs);
+            assert_debug_snapshot!(result);
+        });
     }
 
     #[test]
     fn sorting_alphanumerically() {
         let config = config(None);
-        let root = Directory {
-            path: PathBuf::from("docs"),
-            docs: vec![
-                page("README.md", "Getting Started", None),
-                page("001.md", "bb", None),
-                page("002.md", "11", None),
-            ],
-            dirs: vec![
-                Directory {
-                    path: PathBuf::from("docs").join("bb_child"),
-                    docs: vec![
-                        page("child/README.md", "Index", None),
-                        page("child/001.md", "BB", None),
-                        page("child/002.md", "22", None),
-                        page("child/003.md", "AA", None),
-                        page("child/004.md", "11", None),
-                    ],
-                    dirs: vec![],
-                },
-                Directory {
-                    path: PathBuf::from("docs").join("aa_child"),
-                    docs: vec![
-                        page("child2/README.md", "Index", None),
-                        page("child2/001.md", "123", None),
-                        page("child2/002.md", "aa", None),
-                        page("child2/003.md", "cc", None),
-                        page("child2/004.md", "bb", None),
-                    ],
-                    dirs: vec![],
-                },
-            ],
-        };
+        let mut docs = vec![
+            page("README.md", "Getting Started", None),
+            page("001.md", "bb", None),
+            page("002.md", "11", None),
+            page("child/README.md", "Index", None),
+            page("child/001.md", "BB", None),
+            page("child/002.md", "22", None),
+            page("child/003.md", "AA", None),
+            page("child/004.md", "11", None),
+            page("child2/README.md", "Index", None),
+            page("child2/001.md", "123", None),
+            page("child2/002.md", "aa", None),
+            page("child2/003.md", "cc", None),
+            page("child2/004.md", "bb", None),
+        ];
+        docs.par_sort_by(document_sort);
 
-        let navigation = Navigation::new(&config);
-
-        assert_eq!(
-            navigation.build_for(&root),
-            vec![
-                Link {
-                    path: String::from("/002"),
-                    title: String::from("11"),
-                    children: vec![],
-                },
-                Link {
-                    path: String::from("/child"),
-                    title: String::from("Index"),
-                    children: vec![
-                        Link {
-                            path: String::from("/child/004"),
-                            title: String::from("11"),
-                            children: vec![],
-                        },
-                        Link {
-                            path: String::from("/child/002"),
-                            title: String::from("22"),
-                            children: vec![],
-                        },
-                        Link {
-                            path: String::from("/child/003"),
-                            title: String::from("AA"),
-                            children: vec![],
-                        },
-                        Link {
-                            path: String::from("/child/001"),
-                            title: String::from("BB"),
-                            children: vec![],
-                        },
-                    ]
-                },
-                Link {
-                    path: String::from("/child2"),
-                    title: String::from("Index"),
-                    children: vec![
-                        Link {
-                            path: String::from("/child2/001"),
-                            title: String::from("123"),
-                            children: vec![]
-                        },
-                        Link {
-                            path: String::from("/child2/002"),
-                            title: String::from("aa"),
-                            children: vec![]
-                        },
-                        Link {
-                            path: String::from("/child2/004"),
-                            title: String::from("bb"),
-                            children: vec![]
-                        },
-                        Link {
-                            path: String::from("/child2/003"),
-                            title: String::from("cc"),
-                            children: vec![]
-                        },
-                    ]
-                },
-                Link {
-                    path: String::from("/001"),
-                    title: String::from("bb"),
-                    children: vec![],
-                },
-            ],
-        )
+        insta::with_settings!({
+            description => "Sort alphanumerically",
+            omit_expression => true // do not include the default expression
+        }, {
+            let navigation = Navigation::new(&config);
+            let result = navigation.build_for(&docs);
+            assert_debug_snapshot!(result);
+        });
     }
 
     #[test]
     fn manual_menu_simple() {
-        let root = Directory {
-            path: PathBuf::from("docs"),
-            docs: vec![
-                page("README.md", "Getting Started", None),
-                page("one.md", "One", None),
-                page("two.md", "Two", None),
-            ],
-            dirs: vec![Directory {
-                path: PathBuf::from("docs").join("child"),
-                docs: vec![
-                    page("child/README.md", "Nested Root", None),
-                    page("child/three.md", "Three", None),
-                ],
-                dirs: vec![],
-            }],
-        };
+        let mut docs = vec![
+            page("README.md", "Getting Started", None),
+            page("one.md", "One", None),
+            page("two.md", "Two", None),
+            page("child/README.md", "Nested Root", None),
+            page("child/three.md", "Three", None),
+        ];
+        docs.par_sort_by(document_sort);
 
         let rules = vec![
             NavRule::File(PathBuf::from("docs/one.md")),
             NavRule::Dir(PathBuf::from("docs/child"), Some(DirIncludeRule::WildCard)),
         ];
 
-        let config = config(None);
-        let navigation = Navigation::new(&config);
-        let links: Vec<Link> = root.links(true);
-
-        assert_eq!(
-            navigation.customize(&rules, &links),
-            vec![
-                Link {
-                    path: String::from("/one"),
-                    title: String::from("One"),
-                    children: vec![],
-                },
-                Link {
-                    path: String::from("/child"),
-                    title: String::from("Nested Root"),
-                    children: vec![Link {
-                        path: String::from("/child/three"),
-                        title: String::from("Three"),
-                        children: vec![],
-                    },],
-                },
-            ]
-        )
+        insta::with_settings!({
+            description => "Manual menu simple",
+            omit_expression => true // do not include the default expression
+        }, {
+            let config = config(None);
+            let navigation = Navigation::new(&config);
+            let links = navigation.build_for(&docs);
+            let result = navigation.customize(&rules, &links);
+            assert_debug_snapshot!(result);
+        });
     }
 
     #[test]
     fn manual_menu_nested() {
-        let root = Directory {
-            path: PathBuf::from("docs"),
-            docs: vec![
-                page("README.md", "Getting Started", None),
-                page("one.md", "One", None),
-                page("two.md", "Two", None),
-            ],
-            dirs: vec![Directory {
-                path: PathBuf::from("docs").join("child"),
-                docs: vec![
-                    page("child/README.md", "Nested Root", None),
-                    page("child/three.md", "Three", None),
-                ],
-                dirs: vec![Directory {
-                    path: PathBuf::from("docs").join("child").join("nested"),
-                    docs: vec![
-                        page("child/nested/README.md", "Nested Root", None),
-                        page("child/nested/four.md", "Four", None),
-                    ],
-                    dirs: vec![],
-                }],
-            }],
-        };
+        let mut docs = vec![
+            page("README.md", "Getting Started", None),
+            page("one.md", "One", None),
+            page("two.md", "Two", None),
+            page("child/README.md", "Nested Root", None),
+            page("child/three.md", "Three", None),
+            page("child/nested/README.md", "Nested Root", None),
+            page("child/nested/four.md", "Four", None),
+        ];
+        docs.par_sort_by(document_sort);
 
         let rules = vec![
             NavRule::File(PathBuf::from("docs").join("one.md")),
@@ -441,82 +430,51 @@ mod test {
             ),
         ];
 
-        let config = config(None);
-        let navigation = Navigation::new(&config);
-        let links: Vec<Link> = root.links(true);
-
-        assert_eq!(
-            navigation.customize(&rules, &links),
-            vec![
-                Link {
-                    path: String::from("/one"),
-                    title: String::from("One"),
-                    children: vec![]
-                },
-                Link {
-                    path: String::from("/child"),
-                    title: String::from("Nested Root"),
-                    children: vec![Link {
-                        path: String::from("/child/nested"),
-                        title: String::from("Nested Root"),
-                        children: vec![Link {
-                            path: String::from("/child/nested/four"),
-                            title: String::from("Four"),
-                            children: vec![]
-                        },]
-                    }]
-                }
-            ]
-        );
+        insta::with_settings!({
+            description => "Manual menu nested",
+            omit_expression => true // do not include the default expression
+        }, {
+            let config = config(None);
+            let navigation = Navigation::new(&config);
+            let links = navigation.build_for(&docs);
+            let result = navigation.customize(&rules, &links);
+            assert_debug_snapshot!(result);
+        });
     }
 
     #[test]
     fn manual_menu_file_from_nested_directory() {
-        let root = Directory {
-            path: PathBuf::from("docs"),
-            docs: vec![page("README.md", "Getting Started", None)],
-            dirs: vec![Directory {
-                path: PathBuf::from("docs").join("child"),
-                docs: vec![
-                    page("child/README.md", "Nested Root", None),
-                    page("child/three.md", "Three", None),
-                ],
-                dirs: vec![],
-            }],
-        };
+        let mut docs = vec![
+            page("README.md", "Getting Started", None),
+            page("child/README.md", "Nested Root", None),
+            page("child/three.md", "Three", None),
+        ];
+        docs.par_sort_by(document_sort);
 
         let rules = vec![NavRule::File(
             PathBuf::from("docs").join("child").join("three.md"),
         )];
 
-        let config = config(None);
-        let navigation = Navigation::new(&config);
-        let links: Vec<Link> = root.links(true);
-
-        assert_eq!(
-            navigation.customize(&rules, &links),
-            vec![Link {
-                path: String::from("/child/three"),
-                title: String::from("Three"),
-                children: vec![]
-            },]
-        );
+        insta::with_settings!({
+            description => "Manual menu file from nested directory",
+            omit_expression => true // do not include the default expression
+        }, {
+            let config = config(None);
+            let navigation = Navigation::new(&config);
+            let links = navigation.build_for(&docs);
+            let result = navigation.customize(&rules, &links);
+            assert_debug_snapshot!(result);
+        });
     }
 
     #[test]
     fn manual_menu_file_from_parent_directory() {
-        let root = Directory {
-            path: PathBuf::from("docs"),
-            docs: vec![
-                page("README.md", "Getting Started", None),
-                page("one.md", "One", None),
-            ],
-            dirs: vec![Directory {
-                path: PathBuf::from("docs").join("child"),
-                docs: vec![page("child/README.md", "Nested Root", None)],
-                dirs: vec![],
-            }],
-        };
+        let mut docs = vec![
+            page("README.md", "Getting Started", None),
+            page("one.md", "One", None),
+            page("child/README.md", "Nested Root", None),
+        ];
+        docs.par_sort_by(document_sort);
 
         let rules = vec![NavRule::Dir(
             PathBuf::from("docs").join("child"),
@@ -525,22 +483,16 @@ mod test {
             )])),
         )];
 
-        let config = config(None);
-        let navigation = Navigation::new(&config);
-        let links: Vec<Link> = root.links(true);
-
-        assert_eq!(
-            navigation.customize(&rules, &links),
-            vec![Link {
-                path: String::from("/child"),
-                title: String::from("Nested Root"),
-                children: vec![Link {
-                    path: String::from("/one"),
-                    title: String::from("One"),
-                    children: vec![],
-                }]
-            },]
-        );
+        insta::with_settings!({
+            description => "Manual menu file from parent directory",
+            omit_expression => true // do not include the default expression
+        }, {
+            let config = config(None);
+            let navigation = Navigation::new(&config);
+            let links = navigation.build_for(&docs);
+            let result = navigation.customize(&rules, &links);
+            assert_debug_snapshot!(result);
+        });
     }
 
     #[test]
@@ -551,48 +503,22 @@ mod test {
         base_path: /example
         "}));
 
-        let root = Directory {
-            path: PathBuf::from("docs"),
-            docs: vec![
-                page("README.md", "Getting Started", Some(config.base_path())),
-                page("one.md", "One", Some(config.base_path())),
-                page("two.md", "Two", Some(config.base_path())),
-            ],
-            dirs: vec![Directory {
-                path: PathBuf::from("docs").join("child"),
-                docs: vec![
-                    page("child/README.md", "Nested Root", Some(config.base_path())),
-                    page("child/three.md", "Three", Some(config.base_path())),
-                ],
-                dirs: vec![],
-            }],
-        };
+        let mut docs = vec![
+            page("README.md", "Getting Started", Some(config.base_path())),
+            page("one.md", "One", Some(config.base_path())),
+            page("two.md", "Two", Some(config.base_path())),
+            page("child/README.md", "Nested Root", Some(config.base_path())),
+            page("child/three.md", "Three", Some(config.base_path())),
+        ];
+        docs.par_sort_by(document_sort);
 
-        let navigation = Navigation::new(&config);
-
-        assert_eq!(
-            navigation.build_for(&root),
-            vec![
-                Link {
-                    path: String::from("/example/child"),
-                    title: String::from("Nested Root"),
-                    children: vec![Link {
-                        path: String::from("/example/child/three"),
-                        title: String::from("Three"),
-                        children: vec![],
-                    },],
-                },
-                Link {
-                    path: String::from("/example/one"),
-                    title: String::from("One"),
-                    children: vec![],
-                },
-                Link {
-                    path: String::from("/example/two"),
-                    title: String::from("Two"),
-                    children: vec![],
-                },
-            ]
-        )
+        insta::with_settings!({
+            description => "With base path",
+            omit_expression => true // do not include the default expression
+        }, {
+            let navigation = Navigation::new(&config);
+            let result = navigation.build_for(&docs);
+            assert_debug_snapshot!(result);
+        });
     }
 }

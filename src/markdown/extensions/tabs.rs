@@ -27,10 +27,14 @@ impl Extension for Tabs {
     ) -> (Option<Vec<Output<'a>>>, bool) {
         match event {
             Event::Start(Tag::Link(link_type, url, _title)) => {
-                let mut url_parts = url.split("/").skip(2);
-                let tab_id = url_parts.next();
+                if *link_type == LinkType::Inline && url.starts_with("#/tab/") {
+                    let mut url_parts = url.split("/").skip(2);
+                    let tab_id = url_parts.next();
 
-                if *link_type == LinkType::Inline && url.starts_with("#/tab/") && tab_id.is_some() {
+                    if tab_id.is_none() {
+                        return (None, false);
+                    }
+
                     let mut output: Vec<Output> = vec![];
                     if self.current_tabgroup.is_none() {
                         self.current_tabgroup = Some(TabGroup {

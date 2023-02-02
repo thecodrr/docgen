@@ -1,0 +1,12 @@
+---
+source: src/navigation.rs
+description: Manual menu file from nested directory
+---
+[
+    Link {
+        path: "/child/three",
+        title: "Three",
+        children: [],
+        index: 4294967295,
+    },
+]

@@ -1,4 +1,4 @@
-use pulldown_cmark::Event;
+use pulldown_cmark::{CowStr, Event};
 
 use super::extensions::{link_rewriter::Link, toc::Heading};
 
@@ -24,5 +24,5 @@ pub trait Extension {
 }
 
 pub trait TextExtension {
-    fn process_text<'a>(&self, text: &'a str) -> String;
+    fn process_text(&self, text: &CowStr) -> CowStr;
 }

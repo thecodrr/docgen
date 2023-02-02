@@ -5,6 +5,7 @@ info: "Look at this :stop MORE"
 ---
 ParsedMarkdown {
     html: "<p>Look at this :stop MORE</p>\n",
+    preview: "Look at this :stop MORE",
     headings: [],
     links: [],
     blocks: {},

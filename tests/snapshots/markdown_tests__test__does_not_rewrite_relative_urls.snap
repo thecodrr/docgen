@@ -5,6 +5,7 @@ info: "\n[a relative link](relative/link)\n"
 ---
 ParsedMarkdown {
     html: "<p><a href=\"relative/link\">a relative link</a></p>\n",
+    preview: "a relative link",
     headings: [],
     links: [
         Link {

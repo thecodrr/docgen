@@ -1,0 +1,19 @@
+---
+source: src/navigation.rs
+description: Manual menu file from parent directory
+---
+[
+    Link {
+        path: "/child/",
+        title: "Nested Root",
+        children: [
+            Link {
+                path: "/one",
+                title: "One",
+                children: [],
+                index: 4294967295,
+            },
+        ],
+        index: 4294967295,
+    },
+]

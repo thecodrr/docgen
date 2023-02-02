@@ -1,0 +1,31 @@
+---
+source: src/navigation.rs
+description: With base path
+---
+[
+    Link {
+        path: "/example/one",
+        title: "One",
+        children: [],
+        index: 4294967295,
+    },
+    Link {
+        path: "/example/two",
+        title: "Two",
+        children: [],
+        index: 4294967295,
+    },
+    Link {
+        path: "/example/child/",
+        title: "Nested Root",
+        children: [
+            Link {
+                path: "/example/child/three",
+                title: "Three",
+                children: [],
+                index: 4294967295,
+            },
+        ],
+        index: 4294967295,
+    },
+]

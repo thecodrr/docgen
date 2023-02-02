@@ -1,15 +1,12 @@
-use crate::config::Config;
 use crate::markdown::extensions::link_rewriter::{Link, UrlType};
 use crate::preview_server::resolve_file;
 use crate::site::{Site, SiteBackend};
-use crate::Directory;
-use crate::{Error, Result};
+use crate::{Document, Error, Result};
 
 use std::path::{Path, PathBuf};
 
-pub fn run<B: SiteBackend>(site: &Site<B>) -> Result<()> {
-    let mut broken_links = Vec::new();
-    find_broken_links(&site.root(), site, &mut broken_links, &site.config);
+pub fn check<B: SiteBackend>(root: &Vec<Document>, site: &Site<B>) -> Result<()> {
+    let broken_links = find_broken_links(root, site);
 
     if broken_links.len() == 0 {
         Ok(())
@@ -18,32 +15,25 @@ pub fn run<B: SiteBackend>(site: &Site<B>) -> Result<()> {
     }
 }
 
-fn find_broken_links<B: SiteBackend>(
-    dir: &Directory,
-    site: &Site<B>,
-    broken_links: &mut Vec<(PathBuf, Link)>,
-    config: &Config,
-) {
-    for doc in &dir.docs {
+fn find_broken_links<B: SiteBackend>(docs: &Vec<Document>, site: &Site<B>) -> Vec<(PathBuf, Link)> {
+    let mut broken_links = vec![];
+    for doc in docs {
         for link in doc.outgoing_links() {
             match &link.url {
                 UrlType::Remote(_) => {}
                 UrlType::Local(path) => {
-                    if !matches_a_target(&path, site) {
+                    if !matches_a_target(path, site) {
                         broken_links.push((doc.original_path().to_owned(), link.clone()))
                     }
                 }
             }
         }
     }
-
-    for child_dir in &dir.dirs {
-        find_broken_links(child_dir, site, broken_links, config);
-    }
+    broken_links
 }
 
 fn matches_a_target<B: SiteBackend>(path: &Path, site: &Site<B>) -> bool {
-    resolve_file(path, &site).is_some()
+    resolve_file(path, site).is_some()
 }
 
 #[cfg(test)]
@@ -77,38 +67,31 @@ mod test {
     fn detects_broken_links() {
         let config = config(None);
 
-        let root = Directory {
-            path: config.docs_dir().to_path_buf(),
-            docs: vec![page(
-                "README.md",
-                "Getting Started",
-                "[highway to hell](/dont-exist)",
-            )],
-            dirs: vec![],
-        };
+        let root = vec![page(
+            "README.md",
+            "Getting Started",
+            "[highway to hell](/dont-exist)",
+        )];
 
-        let site = Site::with_root(root, config);
-        site.build().unwrap();
+        let mut site = Site::in_memory(config.clone());
+        site.build(config.clone(), &root).unwrap();
+        let result = check(&root, &site);
 
-        assert!(run(&site).is_err());
+        assert!(result.is_err());
     }
 
     #[test]
     fn is_fine_if_no_broken_links_exist() {
         let config = config(None);
 
-        let root = Directory {
-            path: config.docs_dir().to_path_buf(),
-            docs: vec![
-                page("README.md", "Getting Started", "[highway to hell](/other)"),
-                page("other.md", "Getting Started", "No links!"),
-            ],
-            dirs: vec![],
-        };
+        let root = vec![
+            page("README.md", "Getting Started", "[highway to hell](/other)"),
+            page("other.md", "Getting Started", "No links!"),
+        ];
 
-        let site = Site::with_root(root, config);
-        site.build().unwrap();
-        let result = run(&site);
+        let mut site = Site::in_memory(config.clone());
+        site.build(config.clone(), &root).unwrap();
+        let result = check(&root, &site);
 
         println!("{:?}", result);
 
@@ -119,22 +102,18 @@ mod test {
     fn does_not_mind_if_the_url_has_an_html_extension() {
         let config = config(None);
 
-        let root = Directory {
-            path: config.docs_dir().to_path_buf(),
-            docs: vec![
-                page(
-                    "README.md",
-                    "Getting Started",
-                    "[highway to hell](/other.html)",
-                ),
-                page("other.md", "Getting Started", "No links!"),
-            ],
-            dirs: vec![],
-        };
+        let root = vec![
+            page(
+                "README.md",
+                "Getting Started",
+                "[highway to hell](/other.html)",
+            ),
+            page("other.md", "Getting Started", "No links!"),
+        ];
 
-        let site = Site::with_root(root, config);
-        site.build().unwrap();
-        let result = run(&site);
+        let mut site = Site::in_memory(config.clone());
+        site.build(config.clone(), &root).unwrap();
+        let result = check(&root, &site);
 
         println!("{:?}", result);
 
@@ -145,29 +124,20 @@ mod test {
     fn handles_files_in_subdirectories() {
         let config = config(None);
 
-        let root = Directory {
-            path: config.docs_dir().to_path_buf(),
-            docs: vec![
-                page(
-                    "README.md",
-                    "Getting Started",
-                    "[I'm on a](/nested/)\n[highway to hell](/nested/other.html)",
-                ),
-                page("other.md", "Getting Started", "No links!"),
-            ],
-            dirs: vec![Directory {
-                path: config.docs_dir().to_path_buf().join("nested"),
-                docs: vec![
-                    page("nested/README.md", "Nested", "Content"),
-                    page("nested/other.md", "Nested Child", "No links!"),
-                ],
-                dirs: vec![],
-            }],
-        };
+        let root = vec![
+            page(
+                "README.md",
+                "Getting Started",
+                "[I'm on a](/nested/)\n[highway to hell](/nested/other.html)",
+            ),
+            page("nested/README.md", "Nested", "Content"),
+            page("nested/other.md", "Nested Child", "No links!"),
+            page("other.md", "Getting Started", "No links!"),
+        ];
 
-        let site = Site::with_root(root, config);
-        site.build().unwrap();
-        let result = run(&site);
+        let mut site = Site::in_memory(config.clone());
+        site.build(config.clone(), &root).unwrap();
+        let result = check(&root, &site);
 
         println!("{:?}", result);
 
@@ -182,35 +152,20 @@ mod test {
         base_path: /not_docs
         "}));
 
-        let root = Directory {
-            path: config.docs_dir().to_path_buf(),
-            docs: vec![
-                page_with_base_path(
-                    "README.md",
-                    "Getting Started",
-                    "[I'm on a](/nested/)\n[highway to hell](/nested/other.html)",
-                    "/not_docs",
-                ),
-                page_with_base_path("other.md", "Getting Started", "No links!", "/not_docs"),
-            ],
-            dirs: vec![Directory {
-                path: config.docs_dir().to_path_buf().join("nested"),
-                docs: vec![
-                    page_with_base_path("nested/README.md", "Nested", "Content", "/not_docs"),
-                    page_with_base_path(
-                        "nested/other.md",
-                        "Nested Child",
-                        "No links!",
-                        "/not_docs",
-                    ),
-                ],
-                dirs: vec![],
-            }],
-        };
-
-        let site = Site::with_root(root, config);
-        site.build().unwrap();
-        let result = run(&site);
+        let root = vec![
+            page_with_base_path(
+                "README.md",
+                "Getting Started",
+                "[I'm on a](/nested/)\n[highway to hell](/nested/other.html)",
+                "/not_docs",
+            ),
+            page_with_base_path("other.md", "Getting Started", "No links!", "/not_docs"),
+            page_with_base_path("nested/README.md", "Nested", "Content", "/not_docs"),
+            page_with_base_path("nested/other.md", "Nested Child", "No links!", "/not_docs"),
+        ];
+        let mut site = Site::in_memory(config.clone());
+        site.build(config.clone(), &root).unwrap();
+        let result = check(&root, &site);
 
         println!("{:?}", result);
 
@@ -221,22 +176,18 @@ mod test {
     fn does_not_care_about_anchor_tags_in_paths() {
         let config = config(None);
 
-        let root = Directory {
-            path: config.docs_dir().to_path_buf(),
-            docs: vec![
-                page(
-                    "README.md",
-                    "Getting Started",
-                    "[highway to hell](/other#heading-1)",
-                ),
-                page("other.md", "Getting Started", "# Heading"),
-            ],
-            dirs: vec![],
-        };
+        let root = vec![
+            page(
+                "README.md",
+                "Getting Started",
+                "[highway to hell](/other#heading-1)",
+            ),
+            page("other.md", "Getting Started", "# Heading"),
+        ];
 
-        let site = Site::with_root(root, config);
-        site.build().unwrap();
-        let result = run(&site);
+        let mut site = Site::in_memory(config.clone());
+        site.build(config.clone(), &root).unwrap();
+        let result = check(&root, &site);
 
         println!("{:?}", result);
 

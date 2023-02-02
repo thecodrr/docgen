@@ -5,6 +5,7 @@ info: "\n![an image](/assets/cat.jpg)\n"
 ---
 ParsedMarkdown {
     html: "<p><img src=\"https://example.com/cat.jpg\" alt=\"an image\" /></p>\n",
+    preview: "an image",
     headings: [],
     links: [],
     blocks: {},

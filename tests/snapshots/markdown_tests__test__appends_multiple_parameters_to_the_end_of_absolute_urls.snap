@@ -5,6 +5,7 @@ info: "\n[an link](/absolute/link)\n"
 ---
 ParsedMarkdown {
     html: "<p><a href=\"/absolute/link?bases=are&amp;belong=tous\">an link</a></p>\n",
+    preview: "an link",
     headings: [],
     links: [
         Link {

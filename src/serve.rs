@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
 
@@ -10,7 +10,7 @@ use crate::livereload_server::LivereloadServer;
 use crate::preview_server::PreviewServer;
 use crate::site::Site;
 use crate::watcher::Watcher;
-use crate::Result;
+use crate::{broken_links_checker, docs_finder, Result};
 
 pub struct ServeCommand {}
 
@@ -26,8 +26,10 @@ impl ServeCommand {
         } else {
             StandardStream::stdout(ColorChoice::Never)
         };
+        let root = docs_finder::find(&config);
 
-        let site = Arc::new(Site::in_memory(config.clone()));
+        let site = Arc::new(Mutex::new(Site::in_memory(config.clone())));
+        let c_site = Arc::clone(&site);
 
         bunt::writeln!(stdout, "{$bold}{$blue}Docgen | Serve{/$}{/$}")?;
         println!("Starting development server...\n");
@@ -35,9 +37,9 @@ impl ServeCommand {
         // Do initial build ---------------------------
 
         let start = Instant::now();
-        site.build().unwrap();
+        site.lock().unwrap().build(config.clone(), &root).unwrap();
 
-        if let Err(e) = site.check_dead_links() {
+        if let Err(e) = broken_links_checker::check(&root, &site.lock().unwrap()) {
             bunt::writeln!(stdout, "{$bold}{$yellow}WARNING{/$}{/$}")?;
             println!("{}", e);
         }
@@ -64,12 +66,12 @@ impl ServeCommand {
 
         // Preview Server -----------------------------
 
-        let mut addr = config.addr().clone();
+        let mut addr = config.addr();
         addr.set_port(options.port.unwrap_or_else(|| config.addr().port()));
 
         let http_server = PreviewServer::new(
             addr,
-            site.clone(),
+            c_site,
             config.color_enabled(),
             config.base_path().to_owned(),
         );
@@ -84,14 +86,17 @@ impl ServeCommand {
         for (path, msg) in watch_rcv {
             bunt::writeln!(stdout, "    File {$bold}{}{/$} {}.", path.display(), msg)?;
 
-            site.reset().unwrap();
+            let mut site_write = site.lock().unwrap();
+            site_write.reset().unwrap();
             let start = Instant::now();
-            site.rebuild().unwrap();
+            let root = docs_finder::find(&config);
+            site_write.rebuild(config.clone(), &root).unwrap();
             let duration = start.elapsed();
+            drop(site_write);
 
             bunt::writeln!(stdout, "    Site rebuilt in {$bold}{:?}{/$}\n", duration)?;
 
-            if let Err(e) = site.check_dead_links() {
+            if let Err(e) = broken_links_checker::check(&root, &site.lock().unwrap()) {
                 bunt::writeln!(stdout, "{$bold}{$yellow}WARNING{/$}{/$}")?;
                 println!("{}", e);
             }

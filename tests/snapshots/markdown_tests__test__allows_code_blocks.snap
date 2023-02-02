@@ -4,7 +4,8 @@ description: allows_code_blocks
 info: "```ruby\n1 + 1\nsomething else\nsomething else too\nanother something else\n```"
 ---
 ParsedMarkdown {
-    html: "<pre><code class=\"language-ruby\"><span class=\"constant numeric ruby\">1</span> <span class=\"keyword operator arithmetic ruby\">+</span> <span class=\"constant numeric ruby\">1</span>\nsomething <span class=\"keyword control ruby\">else</span>\nsomething <span class=\"keyword control ruby\">else</span> too\nanother something <span class=\"keyword control ruby\">else</span>\n</code></pre>\n",
+    html: "<pre class=\"code\">\n<code class=\"language-ruby\"><span class=\"constant numeric ruby\">1</span> <span class=\"keyword operator arithmetic ruby\">+</span> <span class=\"constant numeric ruby\">1</span>\nsomething <span class=\"keyword control ruby\">else</span>\nsomething <span class=\"keyword control ruby\">else</span> too\nanother something <span class=\"keyword control ruby\">else</span>\n</code></pre>\n",
+    preview: "",
     headings: [],
     links: [],
     blocks: {

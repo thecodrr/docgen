@@ -1,6 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    borrow::BorrowMut,
+    collections::{HashMap, HashSet},
+};
 
-use pulldown_cmark::{html, CowStr, Event, Options, Parser};
+use pulldown_cmark::{html, Event, Options, Parser, Tag};
 
 use super::{
     extension::{Extension, Output, TextExtension},
@@ -12,6 +15,7 @@ use super::{
         math::MathBlock,
         mermaid::MermaidBlock,
         tabs::Tabs,
+        task_list::Tasklist,
         toc::{Heading, TableOfContents},
     },
 };
@@ -24,6 +28,7 @@ pub struct MarkdownParser {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedMarkdown {
     pub html: String,
+    pub preview: String,
     pub headings: Vec<Heading>,
     pub links: Vec<Link>,
     pub blocks: HashSet<String>,
@@ -33,6 +38,7 @@ impl Default for ParsedMarkdown {
     fn default() -> Self {
         ParsedMarkdown {
             html: String::new(),
+            preview: String::new(),
             headings: vec![],
             links: vec![],
             blocks: HashSet::new(),
@@ -69,6 +75,7 @@ impl MarkdownParser {
         let url_params = parse_opts.url_params.to_owned();
 
         let extensions: Vec<Box<dyn Extension>> = vec![
+            Box::new(Tasklist),
             Box::new(Callout),
             Box::new(MermaidBlock),
             Box::new(MathBlock),
@@ -97,33 +104,31 @@ impl MarkdownParser {
     }
 
     pub fn parse(&mut self, input: &str) -> ParsedMarkdown {
-        let mut parser = Parser::new_ext(input, Options::all())
-            .into_iter()
-            .peekable();
+        let mut parser = Parser::new_ext(input, Options::all()).into_iter();
 
         let mut events: Vec<Event> = Vec::new();
         let mut parsed = ParsedMarkdown::default();
+        let mut extract_preview = false;
 
-        while let Some(ev) = parser.next() {
-            let event = &mut ev.to_owned();
+        while let Some(ev) = &mut parser.borrow_mut().next() {
+            if let Event::Text(text) = ev {
+                for extension in &self.text_processors {
+                    *text = extension.process_text(text)
+                }
 
-            match event {
-                Event::Text(text) => {
-                    let mut copy = text.to_string();
-                    for extension in &self.text_processors {
-                        copy = extension.process_text(&copy);
-                        *event = Event::Text(CowStr::from(copy.to_owned()));
-                    }
+                if extract_preview {
+                    parsed.preview = text.to_string();
+                    extract_preview = false;
                 }
-                Event::Html(_) => {
-                    continue;
-                }
-                _ => {}
+            }
+
+            if let Event::Start(Tag::Paragraph) = ev {
+                extract_preview = parsed.preview.len() <= 0;
             }
 
             let mut handled = false;
             for extension in &mut self.extensions {
-                let (output, is_handled) = extension.process_event(&mut events, &event);
+                let (output, is_handled) = extension.process_event(&mut events, &ev);
 
                 handle_output(output, &mut events, &mut parsed);
 
@@ -134,7 +139,7 @@ impl MarkdownParser {
             }
 
             if !handled {
-                events.push(event.to_owned());
+                events.push(ev.to_owned());
             }
         }
 
@@ -150,6 +155,7 @@ impl MarkdownParser {
     }
 }
 
+#[inline]
 fn handle_output<'a>(
     output: Option<Vec<Output<'a>>>,
     events: &mut Vec<Event<'a>>,

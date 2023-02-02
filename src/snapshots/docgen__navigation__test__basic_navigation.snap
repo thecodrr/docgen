@@ -1,0 +1,74 @@
+---
+source: src/navigation.rs
+description: Basic navigation
+---
+[
+    Link {
+        path: "/1.one",
+        title: "One",
+        children: [],
+        index: 4294967295,
+    },
+    Link {
+        path: "/2.two",
+        title: "Two",
+        children: [],
+        index: 4294967295,
+    },
+    Link {
+        path: "/4.four",
+        title: "Four",
+        children: [],
+        index: 4294967295,
+    },
+    Link {
+        path: "/child/",
+        title: "Nested Root",
+        children: [
+            Link {
+                path: "/child/3.three",
+                title: "Three",
+                children: [],
+                index: 4294967295,
+            },
+            Link {
+                path: "/child/5.five",
+                title: "Five",
+                children: [],
+                index: 4294967295,
+            },
+            Link {
+                path: "/child/child_of_child/",
+                title: "Child of Child",
+                children: [
+                    Link {
+                        path: "/child/child_of_child/6.six",
+                        title: "Six",
+                        children: [],
+                        index: 4294967295,
+                    },
+                    Link {
+                        path: "/child/child_of_child/7.seven",
+                        title: "Seven",
+                        children: [],
+                        index: 4294967295,
+                    },
+                    Link {
+                        path: "/child/child_of_child/8.eight",
+                        title: "Eight",
+                        children: [],
+                        index: 4294967295,
+                    },
+                    Link {
+                        path: "/child/child_of_child/ASASSA",
+                        title: "Child of Child",
+                        children: [],
+                        index: 4294967295,
+                    },
+                ],
+                index: 4294967295,
+            },
+        ],
+        index: 4294967295,
+    },
+]

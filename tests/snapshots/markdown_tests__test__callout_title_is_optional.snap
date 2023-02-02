@@ -5,6 +5,7 @@ info: "> warning\n> \n> The content"
 ---
 ParsedMarkdown {
     html: "<div class=\"callout warning\">\n<p>The content</p>\n</div>",
+    preview: "warning",
     headings: [],
     links: [],
     blocks: {},

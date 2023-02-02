@@ -5,6 +5,7 @@ info: "> info An Info\n>\n> ![an pic](/cat.jpg)"
 ---
 ParsedMarkdown {
     html: "<div class=\"callout info\"><p class=\"callout-title\">An Info</p>\n<p><img src=\"/cat.jpg\" alt=\"an pic\" /></p>\n</div>",
+    preview: "info An Info",
     headings: [],
     links: [],
     blocks: {},

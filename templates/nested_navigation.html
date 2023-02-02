@@ -1,8 +1,0 @@
-<ul>
-    {{#each links}}
-        <li><a {{#if (eq ../current_path this.path) }}class="active" {{/if}}href="{{this.path}}">{{this.title}}</a></li>
-        {{#if this.children}}
-            {{> nested_navigation links=this.children current_path=../current_path}}
-        {{/if}}
-    {{/each}}
-</ul>

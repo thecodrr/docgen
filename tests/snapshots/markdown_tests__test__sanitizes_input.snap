@@ -4,7 +4,8 @@ description: sanitizes_input
 info: "<script>\nalert('I break you');\n</script>"
 ---
 ParsedMarkdown {
-    html: "",
+    html: "<script>\nalert('I break you');\n</script>",
+    preview: "",
     headings: [],
     links: [],
     blocks: {},

@@ -5,6 +5,7 @@ info: "\n[an document](/assets/plans.pdf)\n"
 ---
 ParsedMarkdown {
     html: "<p><a href=\"https://example.com/plans.pdf\">an document</a></p>\n",
+    preview: "an document",
     headings: [],
     links: [
         Link {

@@ -5,6 +5,7 @@ info: "```mermaid\ngraph TD;\n    A-->B;\n    A-->C;\n```"
 ---
 ParsedMarkdown {
     html: "<div class=\"mermaid\">\ngraph TD;\n    A--&gt;B;\n    A--&gt;C;\n</div>",
+    preview: "",
     headings: [],
     links: [],
     blocks: {

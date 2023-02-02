@@ -12,7 +12,6 @@ clap = "2.33.3"
 walkdir = "2.3.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
-handlebars = "3.4.0"
 lazy_static = "1.4.0"
 tiny_http = "0.8"
 http = "0.2"
@@ -21,6 +20,7 @@ tungstenite = { version = "0.11", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 crossbeam-channel = "0.5.6"
 elasticlunr-rs = { git = "https://github.com/thecodrr/elasticlunr-rs.git", branch = "field_ignoring" }
+latex2mathml = { git = "https://github.com/thecodrr/latex2mathml.git", branch = "master", optional = true }
 bunt = "0.2.3"
 scoped_threadpool = "0.1"
 bus = "2.2.3"
@@ -38,17 +38,15 @@ port_scanner = "0.1.5"
 slug = "0.1.4"
 syntect = { version = "5.0.0", default-features = true }
 once_cell = "1.15.0"
-minify-html-onepass = "0.10.2"
-html-minifier = "3.0.15"
-minify-html = "0.10.2"
-katex = "0.4.4"
+minify-js = "0.2.9"
+katex = { version = "0.4.4", optional = true }
+markup = "0.13.1"
 
 [build-dependencies]
 walkdir = "2.3.1"
 seahash = "4.1.0"
 serde_json = { version = "1.0" }
 syntect = { version = "5.0.0", default-features = true }
-css-minify = "0.2.2"
 minify-js = "0.2.9"
 mime = "0.3.16"
 mime_guess = "2.0.4"
@@ -56,6 +54,13 @@ mime_guess = "2.0.4"
 [dev-dependencies]
 indoc = "1.0.2"
 insta = { version = "1.21.0", features = ["yaml"] }
+criterion = "0.3.0"
+percent-encoding = "2.2.0"
+
+[features]
+default = ["latex2mathml"]
+katex = ["dep:katex"]
+latex2mathml = ["dep:latex2mathml"]
 
 [profile.dev.package.insta]
 opt-level = 3
@@ -65,3 +70,4 @@ opt-level = 3
 
 [profile.release]
 opt-level = 3
+lto = "thin"

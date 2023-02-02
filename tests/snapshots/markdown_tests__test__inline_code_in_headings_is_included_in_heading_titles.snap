@@ -5,6 +5,7 @@ info: "# Foo `bar` baz\n        "
 ---
 ParsedMarkdown {
     html: "<h1 id=\"foo-bar-baz\">Foo <code>bar</code> baz</h1>\n",
+    preview: "",
     headings: [
         Heading {
             title: "Foo bar baz",

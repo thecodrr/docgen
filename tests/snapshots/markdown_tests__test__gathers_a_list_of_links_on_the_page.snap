@@ -5,6 +5,7 @@ info: "[foo](/bar)\n[Example](https://www.example.com)\n[Example 2](https://www.
 ---
 ParsedMarkdown {
     html: "<p><a href=\"/bar\">foo</a>\n<a href=\"https://www.example.com\">Example</a>\n<a href=\"https://www.example2.com\">Example 2</a></p>\n",
+    preview: "foo",
     headings: [],
     links: [
         Link {

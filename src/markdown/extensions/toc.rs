@@ -1,9 +1,10 @@
 use pulldown_cmark::{CowStr, Event, Tag};
+use serde::Serialize;
 use slug::slugify;
 
 use crate::markdown::extension::{Extension, Output};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub struct Heading {
     pub title: String,
     pub anchor: String,
@@ -29,24 +30,17 @@ impl Extension for TableOfContents {
                 });
             }
             Event::End(Tag::Heading(_)) => {
-                let mut output: Vec<Output> = vec![];
-
                 let mut heading = self.current_heading.take().unwrap();
                 heading.anchor = slugify(&heading.title);
 
-                let header_start = events
-                    .iter_mut()
-                    .rev()
-                    .find(|tag| match tag {
-                        Event::Start(Tag::Heading(_)) => true,
-                        _ => false,
-                    })
-                    .unwrap();
-                *header_start = html!("<h{} id=\"{}\">", heading.level, heading.anchor);
+                if let Some(header_start) = events.iter_mut().rev().find(|tag| match tag {
+                    Event::Start(Tag::Heading(_)) => true,
+                    _ => false,
+                }) {
+                    *header_start = html!("<h{} id=\"{}\">", heading.level, heading.anchor);
+                }
 
-                output.push(Output::Heading(heading));
-
-                return (Some(output), false);
+                return (Some(vec![Output::Heading(heading)]), false);
             }
             Event::Text(text) | Event::Code(text) => {
                 if let Some(heading) = &mut self.current_heading {

@@ -18,15 +18,33 @@ impl Extension for CodeBlock {
         event: &Event<'a>,
     ) -> (Option<Vec<Output<'a>>>, bool) {
         match event {
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(inner))) => {
+                return (
+                    Some(vec![
+                        Output::Event(html!(
+                            "<pre class=\"code\">\n<code class=\"language-{inner}\">"
+                        )),
+                        Output::None,
+                    ]),
+                    true,
+                );
+            }
+            Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => {
+                return (
+                    Some(vec![
+                        Output::Event(html!("<pre class=\"code\">\n<code>")),
+                        Output::None,
+                    ]),
+                    true,
+                );
+            }
             Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(inner))) => {
                 let syntax_set = SYNTAX_SET.get_or_init(|| SyntaxSet::load_defaults_newlines());
 
-                if let Some(syntax) = syntax_set.find_syntax_by_token(inner.to_string().as_str()) {
+                if let Some(syntax) = syntax_set.find_syntax_by_token(inner) {
                     let code_event = events.last_mut().unwrap();
-                    if let Some(code) = match code_event {
-                        Event::Text(text) => Some(text.to_string()),
-                        _ => None,
-                    } {
+
+                    if let Event::Text(code) = code_event {
                         let highlighted_code =
                             highlighted_html_for_string(&code, syntax_set, syntax);
 

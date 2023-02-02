@@ -1,52 +1,54 @@
-use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
+use std::sync::mpsc::channel;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use elasticlunr::Index;
 use rayon::prelude::*;
-use serde::Serialize;
 use walkdir::WalkDir;
 
-use crate::config::{Config, Themes};
+use crate::config::Config;
 use crate::navigation::{Link, Navigation};
 use crate::site::{BuildMode, SiteBackend};
-use crate::{Directory, Document};
+use crate::Document;
 use crate::{Error, Result};
 
 static INCLUDE_DIR: &str = "_include";
 static HEAD_FILE: &str = "_head.html";
+static LIGHT_SYNTAX_THEME_FILE: &str = "light.css";
+static DARK_SYNTAX_THEME_FILE: &str = "dark.css";
 
-macro_rules! export_asset {
-    ($self: expr, $filename: expr, $dir: expr, $scope: expr) => {{
-        let dest_filename = crate::ASSETS_MAP.get($filename).unwrap();
-        let data = crate::ASSETS
-            .get_file(dest_filename)
-            .expect("Failed to get")
-            .contents();
+lazy_static! {
+    static ref DEBUG_SCRIPT: String = {
+        let code = r#"document.addEventListener('load', function () {
+        // Don't reset scrolling on livereload
+        window.addEventListener('scroll', function () {
+            localStorage.setItem('docgen-scrollPosition', window.scrollY);
+        
+            dragRightMenu();
+        }, false);
 
-        $self
-            .site
-            .add_file(
-                &$self.config.out_dir().join($dir).join(dest_filename),
-                data.to_vec(),
-            )
-            .map_err(|e| {
-                Error::io(
-                    e,
-                    format!("Could not write {} to {} directory", $filename, $dir),
-                )
-            })?;
-        Asset {
-            path: format!("{}/{}", $dir, dest_filename),
-            scope: $scope,
-        }
-    }};
+        if (localStorage.getItem('docgen-scrollPosition') !== null)
+            window.scrollTo(0, localStorage.getItem('docgen-scrollPosition'));
+    
+        document.getElementById('menu-toggle-switch').addEventListener('change', function (e) {
+            disableScrollifMenuOpen();
+        });
+    }, false);"#
+            .as_bytes()
+            .to_vec();
+
+        let mut minified_code = vec![];
+        minify_js::minify(minify_js::TopLevelMode::Global, code, &mut minified_code).unwrap();
+
+        String::from_utf8(minified_code).unwrap()
+    };
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum AssetScope {
     App,
+    #[cfg(feature = "katex")]
     Math,
     Diagram,
     Code,
@@ -54,22 +56,23 @@ enum AssetScope {
     Ignore,
 }
 
+#[derive(Debug)]
 struct Asset {
+    id: String,
     scope: AssetScope,
     path: String,
 }
 
-pub struct SiteGenerator<'a, T: SiteBackend> {
+pub struct SiteGenerator<'a> {
     config: Config,
-    root: Directory,
-    site: Box<&'a T>,
+    root: &'a Vec<Document>,
     timestamp: String,
     scripts: Vec<Asset>,
     stylesheets: Vec<Asset>,
 }
 
-impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
-    pub fn new(site: &'a T) -> Self {
+impl<'a> SiteGenerator<'a> {
+    pub fn new(config: Config, root: &'a Vec<Document>) -> Self {
         let start = SystemTime::now();
 
         let since_the_epoch = start
@@ -77,25 +80,24 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             .expect("Time went backwards");
 
         SiteGenerator {
-            root: site.root(),
-            site: Box::new(site),
-            config: site.config().clone(),
+            root,
+            config,
             timestamp: format!("{}", since_the_epoch.as_secs()),
             scripts: vec![],
             stylesheets: vec![],
         }
     }
 
-    pub fn run(&mut self) -> Result<()> {
+    pub fn run<T: SiteBackend>(&mut self, site: &mut T) -> Result<()> {
         let nav_builder = Navigation::new(&self.config);
         let navigation = nav_builder.build_for(&self.root);
 
         let head_include = self.read_head_include()?;
 
-        self.build_includes()?;
-        self.build_assets()?;
-        self.build_directory(&self.root, &navigation, head_include.as_deref())?;
-        self.build_search_index(&self.root)?;
+        self.build_includes(site)?;
+        self.build_assets(site)?;
+        self.build_directory(self.root, &navigation, head_include.as_deref(), site)?;
+        self.build_search_index(&self.root, site)?;
 
         Ok(())
     }
@@ -114,7 +116,7 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
     }
 
     /// Copies over all custom includes from the _includes directory
-    fn build_includes(&self) -> Result<()> {
+    fn build_includes<T: SiteBackend>(&mut self, site: &mut T) -> Result<()> {
         let custom_assets_dir = self.config.docs_dir().join(INCLUDE_DIR);
 
         for asset in WalkDir::new(&custom_assets_dir)
@@ -122,6 +124,8 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
             .filter_map(|e| e.ok())
             .filter(|e| e.path().is_file())
             .filter(|e| e.path().file_name() != Some(OsStr::new(HEAD_FILE)))
+            .filter(|e| e.path().file_name() != Some(OsStr::new(DARK_SYNTAX_THEME_FILE)))
+            .filter(|e| e.path().file_name() != Some(OsStr::new(LIGHT_SYNTAX_THEME_FILE)))
         {
             let stripped_path = asset
                 .path()
@@ -130,217 +134,195 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
 
             let destination = self.config.out_dir().join(stripped_path);
 
-            self.site.copy_file(asset.path(), &destination)?;
+            site.copy_file(asset.path(), &destination)?;
         }
 
         Ok(())
     }
 
     /// Builds fixed assets required by Docgen
-    fn build_assets(&mut self) -> Result<()> {
-        self.scripts.push(export_asset!(
-            self,
-            "mermaid.min.js",
-            "assets",
-            AssetScope::Diagram
-        ));
-
-        self.scripts.push(export_asset!(
-            self,
-            "elasticlunr.min.js",
-            "assets",
-            AssetScope::App
-        ));
-
-        if let BuildMode::Dev = self.config.build_mode() {
-            // Livereload only in debug mode
-            self.scripts.push(export_asset!(
-                self,
-                "livereload.min.js",
-                "assets",
-                AssetScope::Debug
-            ));
-        }
+    fn build_assets<T: SiteBackend>(&mut self, site: &mut T) -> Result<()> {
+        self.scripts
+            .push(self.export_asset(site, "mermaid.min.js", "assets", AssetScope::Diagram));
 
         self.scripts
-            .push(export_asset!(self, "app.js", "assets", AssetScope::App));
+            .push(self.export_asset(site, "elasticlunr.min.js", "assets", AssetScope::App));
 
-        // Add fonts
-        for font in crate::ASSETS
-            .get_dir("fonts")
-            .unwrap()
-            .entries()
-            .iter()
-            .filter_map(|f| f.as_file())
-        {
-            self.site
-                .add_file(
-                    &self
-                        .config
-                        .out_dir()
-                        .join("assets")
-                        .join("fonts")
-                        .join(font.path().file_name().unwrap()),
-                    Vec::from(font.contents()),
-                )
-                .map_err(|e| Error::io(e, "Could not write katex fonts to assets directory"))?;
-        }
-
-        self.stylesheets.push(export_asset!(
-            self,
-            "normalize.css",
-            "assets",
-            AssetScope::App
-        ));
-
-        self.stylesheets.push(export_asset!(
-            self,
-            "katex.min.css",
-            "assets",
-            AssetScope::Math
-        ));
-
-        self.stylesheets.push(export_asset!(
-            self,
-            "syntect_light_theme.css",
-            "assets",
-            AssetScope::Code
-        ));
-
-        self.stylesheets.push(export_asset!(
-            self,
-            "syntect_dark_theme.css",
-            "assets",
-            AssetScope::Ignore
-        ));
+        self.scripts
+            .push(self.export_asset(site, "app.js", "assets", AssetScope::App));
 
         self.stylesheets
-            .push(export_asset!(self, "style.css", "assets", AssetScope::App));
+            .push(self.export_asset(site, "normalize.css", "assets", AssetScope::App));
+
+        #[cfg(feature = "katex")]
+        {
+            self.stylesheets.push(self.export_asset(
+                site,
+                "katex.min.css",
+                "assets",
+                AssetScope::Math,
+            ));
+
+            // Add fonts
+            for font in crate::ASSETS
+                .get_dir("fonts")
+                .unwrap()
+                .entries()
+                .iter()
+                .filter_map(|f| f.as_file())
+            {
+                let asset_path = self
+                    .config
+                    .out_dir()
+                    .join("assets")
+                    .join("fonts")
+                    .join(font.path().file_name().unwrap());
+
+                if !asset_path.exists() {
+                    site.add_file(&asset_path, &Vec::from(font.contents()))
+                        .map_err(|e| {
+                            Error::io(e, "Could not write katex fonts to assets directory")
+                        })?;
+                }
+            }
+        }
+
+        let custom_light_theme = self
+            .config
+            .docs_dir()
+            .join(INCLUDE_DIR)
+            .join(LIGHT_SYNTAX_THEME_FILE);
+
+        if custom_light_theme.exists() {
+            self.stylesheets.push(self.export_file(
+                site,
+                crate::ASSETS_MAP.get("light.css").unwrap(),
+                "assets",
+                fs::read(custom_light_theme)?.as_slice(),
+                AssetScope::Code,
+            ));
+        } else {
+            self.stylesheets
+                .push(self.export_asset(site, "light.css", "assets", AssetScope::App));
+        }
+
+        let custom_dark_theme = self
+            .config
+            .docs_dir()
+            .join(INCLUDE_DIR)
+            .join(DARK_SYNTAX_THEME_FILE);
+
+        if custom_dark_theme.exists() {
+            self.stylesheets.push(self.export_file(
+                site,
+                crate::ASSETS_MAP.get("dark.css").unwrap(),
+                "assets",
+                fs::read(custom_dark_theme)?.as_slice(),
+                AssetScope::Code,
+            ));
+        } else {
+            self.stylesheets
+                .push(self.export_asset(site, "dark.css", "assets", AssetScope::App));
+        }
+
+        self.stylesheets
+            .push(self.export_asset(site, "style.css", "assets", AssetScope::App));
 
         Ok(())
     }
 
-    fn build_directory(
+    fn build_directory<T: SiteBackend>(
         &self,
-        dir: &Directory,
+        docs: &Vec<Document>,
         nav: &[Link],
         head_include: Option<&str>,
+        site: &mut T,
     ) -> Result<()> {
-        let results: Result<Vec<()>> = dir
-            .docs
-            .par_iter()
-            .map(|doc| {
-                let page_title = if doc.uri_path() == "/" {
-                    self.config.title().to_string()
-                } else {
-                    doc.title().to_string()
-                };
+        let side_navigation = crate::page_template::SideNavigation { navigation: nav }.to_string();
+        let header = crate::page_template::PageHeader {
+            base_path: self.config.base_path(),
+            logo: self.config.logo(),
+            project_title: self.config.title(),
+            project_subtitle: self.config.subtitle(),
+        }
+        .to_string();
+        let init_script = self.init_script();
+        let livereload_script_path = if let BuildMode::Dev = self.config.build_mode() {
+            let asset = self.export_asset(site, "livereload.min.js", "assets", AssetScope::Debug);
+            Some(format!("{}{}", self.config.base_path(), asset.path))
+        } else {
+            None
+        };
+        let livereload_port = if let BuildMode::Dev = self.config.build_mode() {
+            Some(self.config.livereload_addr().port().to_string())
+        } else {
+            None
+        };
 
-                let data = TemplateData {
-                    content: doc.html().to_string(),
-                    headings: doc
-                        .headings()
-                        .iter()
-                        .map(|heading| {
-                            let mut map = BTreeMap::new();
-                            map.insert("title", heading.title.clone());
-                            map.insert("anchor", heading.anchor.clone());
-                            map.insert("level", heading.level.to_string());
+        let (sender, receiver) = channel();
 
-                            map
-                        })
-                        .collect::<Vec<_>>(),
-                    navigation: &nav,
-                    current_path: doc.uri_path(),
-                    project_title: self.config.title().to_string(),
-                    logo: self.config.logo().map(|l| l.to_string()),
-                    build_mode: self.config.build_mode().to_string(),
-                    base_path: self.config.base_path().to_owned(),
-                    livereload_port: self.config.livereload_addr().port().to_string(),
-                    timestamp: &self.timestamp,
-                    page_title,
-                    head_include,
-                    footer: self.build_footer(&doc),
-                    header: self.build_header(&doc),
-                    themes: self.config.themes(),
+        docs.par_iter().for_each_with(sender, |sender, doc| {
+            let page_title = if doc.uri_path == "/" {
+                self.config.title()
+            } else {
+                &doc.title
+            };
 
-                    syntect_dark_theme: crate::ASSETS_MAP
-                        .get("syntect_dark_theme.css")
-                        .unwrap()
-                        .to_string(),
-                    syntect_light_theme: crate::ASSETS_MAP
-                        .get("syntect_light_theme.css")
-                        .unwrap()
-                        .to_string(),
-                };
+            let data = crate::page_template::Page {
+                content: doc.html(),
+                headings: doc.headings(),
+                build_mode: self.config.build_mode(),
+                page_title,
 
-                let mut out = Vec::new();
+                edit_link: self.config.build_edit_link(&doc.path),
 
-                crate::HANDLEBARS
-                    .render_to_write("page", &data, &mut out)
-                    .map_err(|e| Error::handlebars(e, "Could not render template"))?;
+                head_links: self.build_header(&doc),
+                foot_links: self.build_footer(&doc),
 
-                if let BuildMode::Release = self.config.build_mode() {
-                    out = minify_html::minify(
-                        &mut out,
-                        &minify_html::Cfg {
-                            keep_closing_tags: true,
-                            keep_comments: false,
-                            keep_html_and_head_opening_tags: true,
-                            minify_css: true,
-                            minify_js: true,
-                            remove_processing_instructions: true,
-                            remove_bangs: true,
-                            keep_spaces_between_attributes: false,
-                            do_not_minify_doctype: false,
-                            ensure_spec_compliant_unquoted_attribute_values: false,
-                        },
-                    );
-                }
+                footer: self.config.footer(),
 
-                self.site
-                    .add_file(&doc.destination(self.config.out_dir()), out.into())?;
+                custom_head: head_include,
+                header: &header,
+                navigation: &side_navigation,
+                init_script: &init_script,
+                dev_script: &DEBUG_SCRIPT,
+                livereload_script_path: livereload_script_path.as_deref(),
+                livereload_port: livereload_port.as_deref(),
+            }
+            .to_string();
 
-                Ok(())
-            })
-            .collect();
-        let _ok = results?;
+            sender
+                .send((doc.destination(self.config.out_dir()), data.into_bytes()))
+                .unwrap();
+        });
 
-        dir.dirs
-            .par_iter()
-            .map(|d| self.build_directory(&d, &nav, head_include))
-            .collect()
+        receiver.iter().for_each(|(dest, content)| {
+            site.add_file(&dest, &content).unwrap();
+        });
+
+        Ok(())
     }
 
-    fn build_search_index(&self, root: &Directory) -> Result<()> {
+    fn build_search_index<T: SiteBackend>(&self, root: &Vec<Document>, site: &mut T) -> Result<()> {
         let mut index = Index::new(&["title", "uri", "body", "preview"], Some(vec!["body"]));
 
         self.build_search_index_for_dir(root, &mut index);
 
         {
-            self.site
-                .add_file(
-                    &self.config.out_dir().join("search_index.json"),
-                    index.to_json().as_bytes().into(),
-                )
-                .map_err(|e| Error::io(e, "Could not create search index"))
+            site.add_file(
+                &self.config.out_dir().join("search_index.json"),
+                &index.to_json().as_bytes().into(),
+            )
+            .map_err(|e| Error::io(e, "Could not create search index"))
         }
     }
 
-    fn build_search_index_for_dir(&self, root: &Directory, index: &mut Index) {
-        for doc in &root.docs {
+    fn build_search_index_for_dir(&self, docs: &Vec<Document>, index: &mut Index) {
+        for doc in docs {
             index.add_doc(
                 &doc.id.to_string(),
-                &[
-                    &doc.title(),
-                    &doc.uri_path().as_str(),
-                    doc.markdown_section(),
-                    doc.preview(),
-                ],
+                &[&doc.title, &doc.uri_path, doc.html(), doc.preview()],
             );
-        }
-        for dir in &root.dirs {
-            self.build_search_index_for_dir(&dir, index);
         }
     }
 
@@ -357,34 +339,126 @@ impl<'a, T: SiteBackend> SiteGenerator<'a, T> {
     fn build_footer(&self, doc: &Document) -> String {
         compile_assets(&self.scripts, doc, &|asset: &Asset| {
             format!(
-                "<script async defer type=\"text/javascript\" src=\"{}{}\"></script>",
+                "<script id=\"{}\" async defer type=\"text/javascript\" src=\"{}{}\"></script>",
+                asset.id,
                 self.config.base_path(),
                 asset.path
             )
         })
     }
-}
 
-#[derive(Debug, Clone, Serialize)]
-pub struct TemplateData<'a> {
-    pub content: String,
-    pub headings: Vec<BTreeMap<&'static str, String>>,
-    pub navigation: &'a [Link],
-    pub head_include: Option<&'a str>,
-    pub current_path: String,
-    pub page_title: String,
-    pub base_path: String,
-    pub livereload_port: String,
-    pub logo: Option<String>,
-    pub project_title: String,
-    pub build_mode: String,
-    pub timestamp: &'a str,
-    pub header: String,
-    pub footer: String,
-    pub themes: &'a Themes,
+    fn init_script(&self) -> String {
+        let init_script = format!(
+            r#"var DOCGEN_TIMESTAMP = "{}";
+    var BASE_PATH = "{}";
 
-    pub syntect_light_theme: String,
-    pub syntect_dark_theme: String,
+    document.addEventListener("DOMContentLoaded", function() {{
+        const link = document.querySelector(`.site-nav a[href="${{document.location.pathname}}"]`);
+        if (link) {{
+            link.classList.add("active")
+            const detailsElement = link.closest("details");
+            if (detailsElement) {{
+                detailsElement.setAttribute("open", true);
+            }}
+        }}
+    }});
+
+    function setColor() {{
+        const color = localStorage.getItem("docgen-color");
+    
+        if (color === "dark") {{
+          document.documentElement.classList.remove("light");
+          document.documentElement.classList.add("dark");
+        }} else {{
+          document.documentElement.classList.remove("dark");
+          document.documentElement.classList.add("light");
+        }}
+      }}
+      
+      setColor();"#,
+            &self.timestamp,
+            self.config.base_path(),
+        )
+        .as_bytes()
+        .to_vec();
+
+        let mut minified_init_script = vec![];
+        minify_js::minify(
+            minify_js::TopLevelMode::Global,
+            init_script,
+            &mut minified_init_script,
+        )
+        .unwrap();
+
+        String::from_utf8(minified_init_script).unwrap()
+    }
+
+    fn export_asset<T: SiteBackend>(
+        &self,
+        site: &mut T,
+        filename: &str,
+        dir: &str,
+        scope: AssetScope,
+    ) -> Asset {
+        let dest_filename = crate::ASSETS_MAP.get(filename).unwrap();
+        let asset = Asset {
+            path: format!("{}/{}", dir, dest_filename),
+            scope,
+            id: filename.to_string(),
+        };
+        let export_path = self.config.out_dir().join(dir).join(dest_filename);
+
+        if export_path.exists() && !site.in_memory() {
+            asset
+        } else {
+            let data = crate::ASSETS
+                .get_file(dest_filename)
+                .expect("Failed to get")
+                .contents();
+
+            site.add_file(&export_path, &data.to_vec())
+                .map_err(|e| {
+                    Error::io(
+                        e,
+                        format!("Could not write {} to {} directory", filename, dir),
+                    )
+                })
+                .unwrap();
+
+            asset
+        }
+    }
+
+    fn export_file<T: SiteBackend>(
+        &self,
+        site: &mut T,
+        filename: &str,
+        dir: &str,
+        data: &[u8],
+        scope: AssetScope,
+    ) -> Asset {
+        let asset = Asset {
+            path: format!("{}/{}", dir, filename),
+            scope,
+            id: filename.to_string(),
+        };
+        let export_path = self.config.out_dir().join(dir).join(filename);
+
+        if export_path.exists() && !site.in_memory() {
+            asset
+        } else {
+            site.add_file(&export_path, &data.to_vec())
+                .map_err(|e| {
+                    Error::io(
+                        e,
+                        format!("Could not write {} to {} directory", filename, dir),
+                    )
+                })
+                .unwrap();
+
+            asset
+        }
+    }
 }
 
 fn compile_assets(
@@ -393,12 +467,13 @@ fn compile_assets(
     generate_html: &dyn Fn(&Asset) -> String,
 ) -> String {
     assets
-        .into_iter()
+        .iter()
         .filter_map(|script| {
             let include = match script.scope {
                 AssetScope::Debug | AssetScope::App => true,
                 AssetScope::Code => doc.markdown.blocks.contains("code"),
                 AssetScope::Diagram => doc.markdown.blocks.contains("diagram"),
+                #[cfg(feature = "katex")]
                 AssetScope::Math => doc.markdown.blocks.contains("math"),
                 _ => false,
             };

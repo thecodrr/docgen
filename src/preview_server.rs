@@ -1,7 +1,7 @@
 use std::ffi::OsStr;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use bunt::termcolor::{ColorChoice, StandardStream};
 use tiny_http::{Request, Response, Server};
@@ -28,11 +28,16 @@ pub struct PreviewServer<B: SiteBackend> {
     color: bool,
     base_path: String,
     addr: SocketAddr,
-    site: Arc<Site<B>>,
+    site: Arc<Mutex<Site<B>>>,
 }
 
 impl<B: SiteBackend> PreviewServer<B> {
-    pub fn new(addr: SocketAddr, site: Arc<Site<B>>, color: bool, base_path: String) -> Self {
+    pub fn new(
+        addr: SocketAddr,
+        site: Arc<Mutex<Site<B>>>,
+        color: bool,
+        base_path: String,
+    ) -> Self {
         PreviewServer {
             addr,
             site,
@@ -57,7 +62,9 @@ impl<B: SiteBackend> PreviewServer<B> {
         for request in server.incoming_requests() {
             pool.scoped(|scope| {
                 scope.execute(|| {
-                    handle_request(request, &self.site);
+                    let site_read = self.site.lock().unwrap();
+                    handle_request(request, &site_read);
+                    drop(site_read);
                 });
             })
         }
@@ -71,7 +78,7 @@ fn handle_request<B: SiteBackend>(request: Request, site: &Site<B>) {
         let path = PathBuf::from(uri.path());
 
         match resolve_file(&path, &site)
-            .map(|p| (read_file(site, &p), content_type_for(p.extension())))
+            .map(|p| (read_file(&site, &p), content_type_for(p.extension())))
         {
             Some((data, None)) => request.respond(Response::from_data(data).with_status_code(200)),
             Some((data, Some(content_type))) => {
@@ -111,8 +118,6 @@ pub fn resolve_file<B: SiteBackend>(path: &Path, site: &Site<B>) -> Option<PathB
 
     if path.starts_with(site.config.base_path()) {
         path = path.strip_prefix(site.config.base_path()).unwrap();
-    } else {
-        return None;
     }
 
     let mut path = path.strip_prefix("/").unwrap_or(path).to_owned();
@@ -136,12 +141,9 @@ pub fn resolve_file<B: SiteBackend>(path: &Path, site: &Site<B>) -> Option<PathB
 }
 
 fn read_file<B: SiteBackend>(site: &Site<B>, path: &Path) -> Vec<u8> {
-    let content = site
-        .backend
+    site.backend
         .read_path(path)
-        .expect("Found a file to serve but could not open it");
-
-    content
+        .expect("Found a file to serve but could not open it")
 }
 
 fn content_type_for(extension: Option<&OsStr>) -> Option<&'static str> {

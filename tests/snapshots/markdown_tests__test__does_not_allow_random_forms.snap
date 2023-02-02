@@ -5,6 +5,7 @@ info: "<form>\n  <label for=\"ufname\">First name:</label><br>\n  <input type=\"
 ---
 ParsedMarkdown {
     html: "",
+    text: "",
     headings: [],
     links: [],
     blocks: {},

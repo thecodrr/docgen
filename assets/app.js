@@ -1,4 +1,6 @@
-function search() {
+async function search() {
+  await loadSearchIndex();
+
   box = document.getElementById("search-box");
   list = document.getElementById("search-results");
   list.innerHTML = "";
@@ -144,31 +146,38 @@ document
   .getElementById("light-dark-mode-switch")
   .addEventListener("click", toggleColor);
 
-// Initialize mermaid.js based on color theme
-var color = localStorage.getItem("docgen-color");
-if (color === "dark") {
-  console.log("DARK MODE");
-  if ("mermaid" in globalThis) mermaid.initialize({ theme: "dark" });
-} else {
-  if ("mermaid" in globalThis) mermaid.initialize({ theme: "default" });
+function initMermaid() {
+  const mermaidScript = document.getElementById("mermaid.min.js");
+  if (!mermaidScript) return;
+
+  mermaidScript.onload = function () {
+    // Initialize mermaid.js based on color theme
+    var color = localStorage.getItem("docgen-color");
+    if (color === "dark") {
+      if ("mermaid" in globalThis) mermaid.initialize({ theme: "dark" });
+    } else {
+      if ("mermaid" in globalThis) mermaid.initialize({ theme: "dark" });
+    }
+  };
 }
 
 // Load search index
 var INDEX;
 
-fetch(BASE_PATH + "search_index.json")
-  .then(function (response) {
-    if (!response.ok) {
-      throw new Error("HTTP error " + response.status);
-    }
-    return response.json();
-  })
-  .then(function (json) {
-    INDEX = elasticlunr.Index.load(json);
-    document.getElementById("search-box").oninput = search;
-    search();
-  });
+async function loadSearchIndex() {
+  if (INDEX) return;
 
+  const response = await fetch(BASE_PATH + "search_index.json");
+
+  if (!response.ok) {
+    throw new Error("HTTP error " + response.status);
+  }
+  const json = await response.json();
+
+  INDEX = elasticlunr.Index.load(json);
+}
+
+document.getElementById("search-box").oninput = search;
 // Setup keyboard shortcuts
 document.onkeydown = function (e) {
   var searchResults = document.getElementById("search-results");
@@ -239,3 +248,4 @@ document.onclick = (ev) => {
 disableScrollifMenuOpen();
 dragRightMenu();
 setColor();
+initMermaid();

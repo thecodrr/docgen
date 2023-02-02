@@ -323,19 +323,21 @@ mod test {
         |_| {}
     );
 
+    #[cfg(feature = "katex")]
     snapshot_test!(
-        does_not_allow_random_forms,
-        "<form>
-          <label for=\"ufname\">First name:</label><br>
-          <input type=\"text\" id=\"fname\" name=\"fname\"><br>
-          <label for=\"lname\">Last name:</label><br>
-          <input type=\"text\" id=\"lname\" name=\"lname\">
-        </form>",
+        it_renders_math_block_using_katex,
+        "```math
+        x^2 - 5x + 6 = 0 \\
+        (x-2)(x-3)=0 \\
+        \\textrm{then either }x=2 \\,or\\,x=3
+        ```
+        ",
         |_| {}
     );
 
+    #[cfg(feature = "latex2mathml")]
     snapshot_test!(
-        it_detects_math_blocks,
+        it_renders_math_block_using_latex2mathml,
         "```math
         x^2 - 5x + 6 = 0 \\
         (x-2)(x-3)=0 \\

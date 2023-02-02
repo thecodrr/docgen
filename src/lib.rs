@@ -10,13 +10,14 @@ pub mod address;
 mod broken_links_checker;
 mod build;
 pub mod config;
-mod docs_finder;
+pub mod docs_finder;
 mod error;
 mod frontmatter;
 mod init;
 mod livereload_server;
 pub mod markdown;
-mod navigation;
+pub mod navigation;
+mod page_template;
 mod preview_server;
 #[allow(dead_code, unused_variables)]
 mod serve;
@@ -25,7 +26,6 @@ mod site_generator;
 mod watcher;
 
 use std::collections::{BTreeMap, HashMap};
-use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -38,7 +38,6 @@ use markdown::parser::{MarkdownParser, ParseOptions, ParsedMarkdown};
 pub use serve::{ServeCommand, ServeOptions};
 pub use site::BuildMode;
 
-use handlebars::Handlebars;
 use include_dir::{include_dir, Dir};
 use navigation::Link;
 
@@ -54,95 +53,35 @@ lazy_static! {
 
         serde_json::from_str::<HashMap<String, String>>(assets_map).unwrap()
     };
-    pub static ref HANDLEBARS: Handlebars<'static> = {
-        let mut handlebars = Handlebars::new();
-
-        handlebars
-            .register_template_string("page", include_str!("../templates/page.html"))
-            .unwrap();
-        handlebars
-            .register_template_string("navigation", include_str!("../templates/navigation.html"))
-            .unwrap();
-        handlebars
-            .register_template_string(
-                "nested_navigation",
-                include_str!("../templates/nested_navigation.html"),
-            )
-            .unwrap();
-
-        handlebars
-    };
 }
 
 pub type Result<T> = std::result::Result<T, error::Error>;
-
-#[derive(Debug, Clone)]
-pub struct Directory {
-    path: PathBuf,
-    docs: Vec<Document>,
-    dirs: Vec<Directory>,
-}
-
-impl Directory {
-    fn path(&self) -> &Path {
-        &self.path
-    }
-
-    fn index(&self) -> &Document {
-        &self
-            .docs
-            .iter()
-            .find(|d| d.original_file_name() == Some(OsStr::new("README.md")))
-            .expect("No index file found for directory")
-    }
-
-    fn links(&self, include_root_readme: bool) -> Vec<Link> {
-        let mut links = self
-            .docs
-            .iter()
-            .map(|d| Link {
-                title: d.title().to_owned(),
-                path: d.uri_path(),
-                children: vec![],
-            })
-            // Filter out the index for each sub-link, but not the default/README file
-            .filter(|l| {
-                l.path != self.index().uri_path()
-                    || (l.path == "/".to_string() && include_root_readme)
-            })
-            .collect::<Vec<_>>();
-
-        let mut children = self
-            .dirs
-            .iter()
-            .map(|d| Link {
-                title: d.index().title().to_owned(),
-                path: d.index().uri_path(),
-                children: d.links(include_root_readme),
-            })
-            .collect::<Vec<_>>();
-
-        links.append(&mut children);
-        links.sort_by(|a, b| alphanumeric_sort::compare_str(&a.title, &b.title));
-
-        links
-    }
-}
 
 use std::sync::atomic::AtomicU32;
 
 static DOCUMENT_ID: AtomicU32 = AtomicU32::new(1);
 
 #[derive(Debug, Clone, PartialEq)]
-struct Document {
+pub struct Document {
+    pub index: u32,
     pub id: u32,
     /// The relative path in the docs folder to the file
     path: PathBuf,
-    rename: Option<String>,
+    parent: PathBuf,
+
+    /// The path to the HTML file on disk that will be generated
+    html_path: PathBuf,
+
+    /// The URI path to this file.
+    ///
+    /// E.g: /foo/bar.html => /foo/bar
+    uri_path: String,
+
     raw: String,
     markdown: ParsedMarkdown,
     frontmatter: BTreeMap<String, String>,
     base_path: String,
+    title: String,
 }
 
 impl Document {
@@ -159,17 +98,30 @@ impl Document {
     }
 
     /// Creates a new document from its raw components
-    fn new(
+    pub fn new(
         path: &Path,
         raw: String,
         frontmatter: BTreeMap<String, String>,
         base_path: &str,
     ) -> Self {
-        let rename = if path.ends_with("README.md") {
-            Some("index".to_string())
+        let is_root = path.ends_with("README.md");
+        let html_path = if is_root {
+            path.with_file_name("index.html")
         } else {
-            None
+            path.with_extension("html")
         };
+        let uri_path = format!("{}{}", base_path, Link::path_to_uri(&html_path));
+
+        let parent = Path::new(&uri_path)
+            .parent()
+            .map(|s| {
+                if s.ends_with("/") {
+                    s.to_path_buf()
+                } else {
+                    s.join("")
+                }
+            })
+            .unwrap_or_else(|| Path::new("/").to_path_buf());
 
         let markdown_options = {
             let mut opts = ParseOptions::default();
@@ -180,19 +132,35 @@ impl Document {
         let mut parser = MarkdownParser::new(Some(markdown_options));
         let markdown = parser.parse(frontmatter::without(&raw));
 
+        let title = frontmatter
+            .get("title")
+            .map(|t| t.as_ref())
+            .or_else(|| {
+                if markdown.headings.len() > 0 {
+                    Some(markdown.headings[0].title.as_str())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| path.file_stem().unwrap().to_str().unwrap())
+            .to_string();
+
         Document {
+            index: frontmatter
+                .get("index")
+                .and_then(|idx| idx.parse::<u32>().ok())
+                .unwrap_or(u32::MAX),
             id: DOCUMENT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             path: path.to_path_buf(),
             base_path: base_path.to_owned(),
             raw,
             markdown,
-            rename,
             frontmatter,
+            html_path,
+            uri_path,
+            title,
+            parent,
         }
-    }
-
-    fn original_file_name(&self) -> Option<&OsStr> {
-        self.path.file_name()
     }
 
     fn original_path(&self) -> &Path {
@@ -201,39 +169,14 @@ impl Document {
 
     /// Destination path, given an output directory
     fn destination(&self, out: &Path) -> PathBuf {
-        out.join(self.html_path())
+        out.join(&self.html_path)
     }
 
-    /// The path to the HTML file on disk that will be generated
-    fn html_path(&self) -> PathBuf {
-        // TODO(Nik): Refactor this mess to be readable
-        match self.rename {
-            None => self.path.with_file_name(&format!(
-                "{}.html",
-                self.path.file_stem().unwrap().to_str().unwrap()
-            )),
-            Some(ref rename) => self.path.with_file_name(&format!("{}.html", rename)),
-        }
+    fn preview(&self) -> &String {
+        &self.markdown.preview
     }
 
-    /// The URI path to this file.
-    ///
-    /// E.g: /foo/bar.html => /foo/bar
-    fn uri_path(&self) -> String {
-        format!("{}{}", self.base_path, Link::path_to_uri(&self.html_path()))
-    }
-
-    fn markdown_section(&self) -> &str {
-        frontmatter::without(&self.raw)
-    }
-
-    fn preview(&self) -> &str {
-        let raw = frontmatter::without(&self.raw);
-        let to = if raw.len() > 100 { 100 } else { raw.len() };
-        &raw[0..to]
-    }
-
-    fn headings(&self) -> &[Heading] {
+    fn headings(&self) -> &Vec<Heading> {
         &self.markdown.headings
     }
 
@@ -241,14 +184,7 @@ impl Document {
         &self.markdown.links
     }
 
-    fn html(&self) -> &str {
+    fn html(&self) -> &String {
         &self.markdown.html
-    }
-
-    fn title(&self) -> &str {
-        self.frontmatter
-            .get("title")
-            .map(|t| t.as_ref())
-            .unwrap_or_else(|| self.path.file_stem().unwrap().to_str().unwrap())
     }
 }

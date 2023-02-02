@@ -5,6 +5,7 @@ info: "> I am here!"
 ---
 ParsedMarkdown {
     html: "<blockquote>\n<p>I am here!</p>\n</blockquote>\n",
+    preview: "I am here!",
     headings: [],
     links: [],
     blocks: {},

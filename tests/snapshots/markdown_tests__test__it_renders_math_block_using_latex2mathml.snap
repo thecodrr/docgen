@@ -1,0 +1,14 @@
+---
+source: tests/markdown_tests.rs
+description: it_renders_math_block_using_latex2mathml
+info: "```math\nx^2 - 5x + 6 = 0 \\\n(x-2)(x-3)=0 \\\n\\textrm{then either }x=2 \\,or\\,x=3\n```\n"
+---
+ParsedMarkdown {
+    html: "<div class=\"math\">\n<math xmlns=\"http://www.w3.org/1998/Math/MathML\" display=\"block\"><msup><mi>x</mi><mn>2</mn></msup><mo>-</mo><mn>5</mn><mi>x</mi><mo>+</mo><mn>6</mn><mo>=</mo><mn>0</mn><mtext>[PARSE ERROR: Undefined(\"Command(\\\"\\\\n\\\")\")]</mtext><mo>(</mo><mi>x</mi><mo>-</mo><mn>2</mn><mo>)</mo><mo>(</mo><mi>x</mi><mo>-</mo><mn>3</mn><mo>)</mo><mo>=</mo><mn>0</mn><mtext>[PARSE ERROR: Undefined(\"Command(\\\"\\\\n\\\")\")]</mtext><mtext mathvariant=\"then either \">normal</mtext><mi>x</mi><mo>=</mo><mn>2</mn><mspace width=\"0.16666667em\"/><mi>o</mi><mi>r</mi><mspace width=\"0.16666667em\"/><mi>x</mi><mo>=</mo><mn>3</mn></math></div>",
+    preview: "",
+    headings: [],
+    links: [],
+    blocks: {
+        "math",
+    },
+}

@@ -59,7 +59,7 @@ Luckily, there is a handy command line tool, [gh-pages](https://www.npmjs.com/pa
 that takes care of all of that for you. All you need to do, is run a single command, and your site
 will be published.
 
-> warning :warning: Note about gh-pages %}
+> warning :warning: Note about gh-pages
 >
 > At the time of writing, `gh-pages@3.1.0` does not work for projects without a package.json file. This is why this guide recommends using `3.0.0`. Read more in [this issue](https://github.com/tschaub/gh-pages/issues/354).
 

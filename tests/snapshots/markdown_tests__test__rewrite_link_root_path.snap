@@ -5,6 +5,7 @@ info: "\n[an link](/foo/bar)\n"
 ---
 ParsedMarkdown {
     html: "<p><a href=\"/other/root/foo/bar\">an link</a></p>\n",
+    preview: "an link",
     headings: [],
     links: [
         Link {

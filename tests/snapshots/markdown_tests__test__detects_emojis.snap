@@ -5,6 +5,7 @@ info: "I am :grinning:."
 ---
 ParsedMarkdown {
     html: "<p>I am 😀.</p>\n",
+    preview: "I am 😀.",
     headings: [],
     links: [],
     blocks: {},

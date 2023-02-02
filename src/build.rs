@@ -16,7 +16,8 @@ impl BuildCommand {
             StandardStream::stdout(ColorChoice::Never)
         };
 
-        let site = Site::disk_backed(config.clone());
+        let root = crate::docs_finder::find(&config);
+        let mut site = Site::disk_backed(config.clone());
 
         let target_dir = config.out_dir();
 
@@ -37,14 +38,13 @@ impl BuildCommand {
         }
 
         let start = Instant::now();
-        let result = site.build();
+        let result = site.build(config.clone(), &root);
         let duration = start.elapsed();
 
         if result.is_ok() {
             bunt::writeln!(stdout, "Site built in {$bold}{:?}{/$}\n", duration)?;
 
-            let dead_links_result = site.check_dead_links();
-
+            let dead_links_result = crate::broken_links_checker::check(&root, &site);
             if dead_links_result.is_err() && config.allow_failed_checks() {
                 bunt::writeln!(stdout, "{$bold}{$yellow}WARNING{/$}{/$}")?;
                 bunt::writeln!(stdout, "{}", dead_links_result.unwrap_err())?;

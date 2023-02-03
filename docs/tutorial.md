@@ -1,5 +1,6 @@
 ---
 title: Tutorial
+index: 1
 ---
 
 # Tutorial

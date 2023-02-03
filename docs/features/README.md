@@ -1,5 +1,6 @@
 ---
 title: Features
+index: 2
 ---
 
 # Features

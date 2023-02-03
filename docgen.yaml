@@ -2,12 +2,3 @@
 title: Docgen
 subtitle: DOCS
 edit_root: https://github.com/thecodrr/docgen/blob/master/
-
-navigation:
-  - path: docs/installing.md
-  - path: docs/tutorial.md
-  - path: docs/features
-    children: "*"
-  - path: docs/deployment.md
-  - path: docs/configuration.md
-  - path: docs/contributor-guide.md

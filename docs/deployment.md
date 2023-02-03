@@ -1,5 +1,6 @@
 ---
 title: Deployment
+index: 3
 ---
 
 # Deployment

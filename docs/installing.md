@@ -1,5 +1,6 @@
 ---
 title: Installing
+index: 0
 ---
 
 # Installing Docgen

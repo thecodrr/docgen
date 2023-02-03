@@ -88,7 +88,7 @@ jobs:
         run: |
           release_upload_url="$(cat artifacts/release-upload-url)"
           echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
-          release_version=$(cargo metadata --format-version 1 | jq '.packages[] | select( .name == "docgen") | .version')
+          release_version=$(cargo metadata --format-version 1 | jq -r '.packages[] | select( .name == "docgen") | .version')
           echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
 
       - name: Show end

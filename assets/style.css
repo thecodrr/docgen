@@ -597,7 +597,6 @@ nav ul ul li {
 
 nav ul a {
   font-size: 13pt;
-  font-weight: 700;
 }
 
 nav ul ul {
@@ -608,7 +607,6 @@ nav ul ul {
 
 nav ul ul a {
   font-size: 13pt;
-  font-weight: 400;
   color: var(--fg-dim);
 }
 

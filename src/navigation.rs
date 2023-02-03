@@ -72,7 +72,9 @@ impl<'a> Navigation<'a> {
             }
         }
 
-        directories.remove(&String::from(base_path)).unwrap()
+        let mut links = directories.remove(&String::from(base_path)).unwrap();
+        links.sort_by(|a, b| a.index.cmp(&b.index));
+        links
     }
 
     /// Customizes the navigation tree given some rules provided through the

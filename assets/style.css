@@ -37,9 +37,7 @@ h4,
 h5,
 h6,
 th {
-  font-family: "Inter", sans-serif;
   font-weight: 400;
-  margin-top: 34pt;
   padding: 0pt;
   color: var(--heading);
 }

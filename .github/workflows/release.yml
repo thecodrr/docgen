@@ -7,16 +7,8 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-
       - name: Create artifacts directory
         run: mkdir artifacts
-
-      - name: Get version from cargo
-        run: |
-          version=$(cargo metadata | jq '.packages[] | select( .name == "docgen") | .version')
-          echo "DOCGEN_VERSION=${version}" >> $GITHUB_ENV
 
       - name: Create GitHub release
         id: release
@@ -25,15 +17,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
-          name: "v${{ env.DOCGEN_VERSION }}"
-          tag_name: ${{ env.DOCGEN_VERSION }}
+          name: Release
           generate_release_notes: false
 
       - name: Save release upload URL to artifact
         run: echo "${{ steps.release.outputs.upload_url }}" > artifacts/release-upload-url
-
-      - name: Save version number to artifact
-        run: echo "${{ env.DOCGEN_VERSION }}" > artifacts/release-version
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
@@ -100,7 +88,7 @@ jobs:
         run: |
           release_upload_url="$(cat artifacts/release-upload-url)"
           echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
-          release_version="$(cat artifacts/release-version)"
+          release_version=$(cargo metadata --format-version 1 | jq '.packages[] | select( .name == "docgen") | .version')
           echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
 
       - name: Show end

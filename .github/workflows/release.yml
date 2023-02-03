@@ -7,6 +7,9 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
       - name: Create artifacts directory
         run: mkdir artifacts
 

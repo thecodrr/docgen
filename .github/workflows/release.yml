@@ -10,6 +10,11 @@ jobs:
       - name: Create artifacts directory
         run: mkdir artifacts
 
+      - name: Get version from cargo
+        run: |
+          version=$(cargo metadata | jq '.packages[] | select( .name == "docgen") | .version')
+          echo "DOCGEN_VERSION=${version}" >> $GITHUB_ENV
+
       - name: Create GitHub release
         id: release
         uses: softprops/action-gh-release@v1
@@ -17,11 +22,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
-          name: Docgen release
+          name: "v${{ env.DOCGEN_VERSION }}"
+          tag_name: ${{ env.DOCGEN_VERSION }}
           generate_release_notes: false
 
       - name: Save release upload URL to artifact
         run: echo "${{ steps.release.outputs.upload_url }}" > artifacts/release-upload-url
+
+      - name: Save version number to artifact
+        run: echo "${{ env.DOCGEN_VERSION }}" > artifacts/release-version
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
@@ -88,16 +97,19 @@ jobs:
         run: |
           release_upload_url="$(cat artifacts/release-upload-url)"
           echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
+          release_version="$(cat artifacts/release-version)"
+          echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
 
       - name: Show end
         shell: bash
         run: |
+          echo "release version: ${{ env.RELEASE_VERSION }}"
           echo "release upload url: ${{ env.RELEASE_UPLOAD_URL }}"
 
       - name: Build archive
         shell: bash
         run: |
-          staging="docgen-${{ matrix.target }}"
+          staging="docgen-${{ env.RELEASE_VERSION }}-${{ matrix.target }}"
           mkdir -p "$staging"
 
           if [ "${{ matrix.os }}" = "windows-2019" ]; then

@@ -26,10 +26,6 @@ body {
   background-color: var(--selection-bg);
 }
 
-/** {
-  color: var(--fg);
-}*/
-
 h1,
 h2,
 h3,
@@ -846,6 +842,7 @@ ul[role="tablist"] li label.active {
 
 .tab-panel {
   display: none;
+  margin: 0px 10px;
 }
 
 .tab-panel.active {

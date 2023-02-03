@@ -7,6 +7,7 @@ on:
     # - ag/release
     tags:
     - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
 
 jobs:
   create-release:
@@ -85,6 +86,7 @@ jobs:
           RUSTFLAGS: ${{ matrix.rustflags }}
         with:
           command: build
+          use-cross: true
           args: --verbose --release --target ${{ matrix.target }}
 
       - name: Strip release binary (linux and macos)

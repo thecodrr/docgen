@@ -1,0 +1,89 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Release
+    strategy:
+      matrix:
+        build: [linux, macos, windows]
+        include:
+          - build: linux
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact: docgen
+            rustflags: ""
+          - build: macos
+            os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: docgen
+            rustflags: ""
+          - build: windows
+            os: windows-2019
+            target: x86_64-pc-windows-msvc
+            artifact: docgen.exe
+            rustflags: "-C target-feature=+crt-static"
+
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Set stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+
+      - name: Build release
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: ${{ matrix.rustflags }}
+        with:
+          command: build
+          use-cross: true
+          args: --verbose --release --target ${{ matrix.target }}
+
+      - name: Strip release binary (linux and macos)
+        if: matrix.build == 'linux' || matrix.build == 'macos'
+        run: strip "target/${{ matrix.target }}/release/docgen"
+
+      - name: Get release download URL
+        uses: actions/download-artifact@v1
+        with:
+          name: artifacts
+          path: artifacts
+
+      - name: Set release ENV variables
+        shell: bash
+        run: |
+          release_upload_url="$(cat artifacts/release-upload-url)"
+          echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
+          release_version="$(cat artifacts/release-version)"
+          echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
+
+      - name: Show end
+        shell: bash
+        run: |
+          echo "release version: ${{ env.RELEASE_VERSION }}"
+          echo "release upload url: ${{ env.RELEASE_UPLOAD_URL }}"
+
+      - name: Build archive
+        shell: bash
+        run: |
+          staging="docgen-${{ env.RELEASE_VERSION }}-${{ matrix.target }}"
+          mkdir -p "$staging"
+
+          if [ "${{ matrix.os }}" = "windows-2019" ]; then
+            cp "target/${{ matrix.target }}/release/docgen.exe" "$staging/"
+            7z a "$staging.zip" "$staging"
+            echo "ASSET=$staging.zip" >> $GITHUB_ENV
+          else
+            cp "target/${{ matrix.target }}/release/docgen" "$staging/"
+            tar czf "$staging.tar.gz" "$staging"
+            echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
+          fi

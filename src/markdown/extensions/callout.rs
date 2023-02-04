@@ -61,15 +61,18 @@ impl Extension for Callout {
                     }
 
                     events[start_index] = if title.is_empty() {
-                        html!("<div class=\"callout {}\">", callout_type)
+                        html!(
+                            "<div class=\"callout {}\"><div class=\"callout-content\">",
+                            callout_type
+                        )
                     } else {
                         html!(
-                            "<div class=\"callout {}\"><p class=\"callout-title\">{}</p>",
+                            "<div class=\"callout {}\"><p class=\"callout-title\">{}</p><div class=\"callout-content\">",
                             callout_type,
                             title
                         )
                     };
-                    return (Some(vec![Output::Event(html!("</div>"))]), true);
+                    return (Some(vec![Output::Event(html!("</div></div>"))]), true);
                 }
             }
             _ => {}

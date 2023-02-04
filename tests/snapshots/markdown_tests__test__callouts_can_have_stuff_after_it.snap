@@ -4,7 +4,7 @@ description: callouts_can_have_stuff_after_it
 info: "> warning An Note\n> \n> The content\n\nMoar\n"
 ---
 ParsedMarkdown {
-    html: "<div class=\"callout warning\"><p class=\"callout-title\">An Note</p>\n<p>The content</p>\n</div>\n<p>Moar</p>\n",
+    html: "<div class=\"callout warning\"><p class=\"callout-title\">An Note</p><div class=\"callout-content\">\n<p>The content</p>\n</div></div>\n<p>Moar</p>\n",
     preview: "warning An Note",
     headings: [],
     links: [],

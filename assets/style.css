@@ -146,6 +146,11 @@ th {
 
 .callout p {
   margin: 0px;
+  margin-bottom: 5px;
+}
+
+.callout p:last-child {
+  margin: 0px;
 }
 
 .callout {
@@ -155,13 +160,14 @@ th {
 }
 
 .callout .callout-title {
+  margin: 0px;
   padding: 2px 10px;
   font-weight: 700;
   color: #fff !important;
 }
 
-.callout p:not(.callout-title) {
-  margin: 5px 10px;
+.callout .callout-content {
+  padding: 10px;
 }
 
 .callout.info {
@@ -508,12 +514,12 @@ th {
 }
 
 .docgen-content li {
-  padding-bottom: 5px;
+  padding-bottom: 10px;
 }
 
 .docgen-content li ul,
 .docgen-content li ol {
-  padding-top: 5px;
+  padding-top: 10px;
 }
 
 /* Left sidebar -------------------------------------------------------- */

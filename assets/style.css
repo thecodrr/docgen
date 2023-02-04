@@ -271,7 +271,7 @@ th {
 }
 
 .sidebar-left,
-.sidebar-right {
+.sidebar-right .page-nav {
   padding-top: 50px;
   box-sizing: border-box;
 }
@@ -280,25 +280,13 @@ th {
   padding-left: 50px;
 }
 
-.sidebar-right .page-nav.fixed {
+.sidebar-left,
+.sidebar-right .page-nav {
+  position: sticky;
   top: 0;
-  position: fixed;
-  width: 280px;
-}
-
-.sidebar-right.bottom {
-  display: flex;
-  align-items: flex-end;
-  padding-bottom: 230px;
-}
-
-.sidebar-right.bottom .page-nav {
-  width: 280px;
-  margin-top: -100px;
 }
 
 .sidebar-left {
-  padding-bottom: 160px;
   padding-right: 50px;
 }
 
@@ -540,6 +528,7 @@ th {
 .sidebar-left {
   height: calc(100% - 250px);
   overflow: auto;
+  height: fit-content;
 }
 
 .project-title {

@@ -62,74 +62,6 @@ function disableScrollifMenuOpen() {
   }
 }
 
-function atTop() {
-  var nav = document.getElementsByClassName("sidebar-right")[0];
-
-  return window.scrollY <= nav.offsetTop + 50;
-}
-
-function navTouchingBottom() {
-  var nav = document.getElementsByClassName("page-nav")[0];
-
-  var height = Math.max(
-    document.body.scrollHeight,
-    document.documentElement.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.offsetHeight,
-    document.body.clientHeight,
-    document.documentElement.clientHeight
-  );
-  // Magic number determined
-  // by height of bottom wave
-  return window.scrollY + nav.offsetTop + nav.offsetHeight >= height - 230;
-}
-
-function scrolledUp() {
-  var height = Math.max(
-    document.body.scrollHeight,
-    document.documentElement.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.offsetHeight,
-    document.body.clientHeight,
-    document.documentElement.clientHeight
-  );
-
-  // Magic number determined
-  // by height of bottom wave
-  return window.scrollY + window.innerHeight < height - 230;
-}
-
-function dragRightMenu() {
-  if (atTop()) {
-    document.getElementById("page-nav").classList.remove("fixed");
-    document
-      .getElementsByClassName("sidebar-right")[0]
-      .classList.remove("bottom");
-  } else if (scrolledUp()) {
-    document.getElementById("page-nav").classList.add("fixed");
-    document
-      .getElementsByClassName("sidebar-right")[0]
-      .classList.remove("bottom");
-  } else if (navTouchingBottom()) {
-    document.getElementById("page-nav").classList.remove("fixed");
-    document.getElementsByClassName("sidebar-right")[0].classList.add("bottom");
-  } else {
-    document.getElementById("page-nav").classList.add("fixed");
-    document
-      .getElementsByClassName("sidebar-right")[0]
-      .classList.remove("bottom");
-  }
-}
-
-function isVisible(element) {
-  var rect = element.getBoundingClientRect();
-  var elemTop = rect.top;
-  var elemBottom = rect.bottom;
-
-  var isVisible = elemTop >= 0 && elemBottom <= window.innerHeight;
-  return isVisible;
-}
-
 function toggleColor() {
   var color = localStorage.getItem("docgen-color");
 
@@ -220,8 +152,9 @@ document.onkeydown = function (e) {
 
 document.onclick = (ev) => {
   if (ev.target instanceof HTMLElement) {
-    const tabId =
-      ev.target.closest(`[role="tab"]`) && ev.target.closest(`[role="tab"]`).id;
+    const clickedTab = ev.target.closest(`[role="tab"]`);
+    const tabId = clickedTab && clickedTab.id;
+
     if (tabId) {
       for (const tabItem of document.querySelectorAll(
         `.tabgroup label#${tabId}`
@@ -241,11 +174,17 @@ document.onclick = (ev) => {
         activeTabPanel.classList.remove("active");
         tabPanel.classList.add("active");
       }
+
+      setTimeout(() =>
+        clickedTab.scrollIntoView({
+          block: "nearest",
+          inline: "nearest",
+        })
+      );
     }
   }
 };
 
 disableScrollifMenuOpen();
-dragRightMenu();
 setColor();
 initMermaid();

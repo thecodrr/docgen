@@ -526,10 +526,18 @@ th {
   margin-top: 0;
 }
 
+.docgen-content li {
+  padding-bottom: 5px;
+}
+
+.docgen-content li ul,
+.docgen-content li ol {
+  padding-top: 5px;
+}
+
 /* Left sidebar -------------------------------------------------------- */
 
 .sidebar-left {
-  height: calc(100% - 250px);
   overflow: auto;
   height: fit-content;
 }

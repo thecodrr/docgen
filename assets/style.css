@@ -86,8 +86,7 @@ table {
 }
 
 pre {
-  font-family: "Consolas", "Bitstream Vera Sans Mono", "Courier New", Courier,
-    monospace;
+  font-family: var(--monospace-font-family, monospace);
 
   border: 2px solid var(--primary);
   position: relative;
@@ -101,8 +100,7 @@ pre {
 
 p code,
 li code {
-  font-family: "Consolas", "Bitstream Vera Sans Mono", "Courier New", Courier,
-    monospace;
+  font-family: var(--monospace-font-family, monospace);
 
   font-size: 0.9em;
   background: var(--code-bg);
@@ -542,7 +540,7 @@ th {
 }
 
 .project-title a {
-  font-family: "Source Sans Pro", sans-serif;
+  font-family: var(--font-family, sans-serif);
   text-decoration: none;
   color: var(--header-fg);
 }
@@ -665,7 +663,7 @@ nav details[open] summary::after {
 }
 
 .search #search-form input {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-family, sans-serif);
   color: var(--input-fg);
   height: 50px;
   outline: none;
@@ -686,7 +684,7 @@ nav details[open] summary::after {
 }
 
 .search .search-icon {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-family, sans-serif);
   color: var(--button-fg);
   background: var(--button-bg);
 
@@ -739,7 +737,7 @@ nav details[open] summary::after {
 }
 
 #search-results a p {
-  font-family: "Source Sans Pro", sans-serif;
+  font-family: var(--font-family, sans-serif);
 }
 
 #search-results a:hover,

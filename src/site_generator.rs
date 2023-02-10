@@ -109,6 +109,10 @@ impl<'a> SiteGenerator<'a> {
     }
 
     fn build_sitemap<T: SiteBackend>(&self, site: &mut T) {
+        if self.config.build_mode() == BuildMode::Dev {
+            return;
+        }
+
         if let Some(base_url) = self.config.base_url() {
             let base = url::Url::parse(base_url).unwrap();
             let urls: Vec<Url> = self
@@ -127,7 +131,7 @@ impl<'a> SiteGenerator<'a> {
             let mut buf = Vec::<u8>::new();
             url_set.write(&mut buf).unwrap();
 
-            site.add_file(Path::new("sitemap.xml"), &buf)
+            site.add_file(Path::new("/sitemap.xml"), &buf)
                 .map_err(|e| Error::io(e, format!("Could not write sitemap.xml")))
                 .unwrap();
         }

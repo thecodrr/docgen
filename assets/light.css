@@ -2,6 +2,7 @@
 
 html.light {
   --primary: #5871ef;
+  --primary-fg: #fff;
   --page-bg: #f0f0f0;
   --document-bg: #f9f9fa;
   --document-fg: #403f53;

@@ -352,10 +352,16 @@ impl<'a> SiteGenerator<'a> {
             r#"var DOCGEN_TIMESTAMP = "{}";
     var BASE_PATH = "{}";
 
+    window.onload = function() {{
+        document.body.classList.remove("preload");
+    }}
+
     document.addEventListener("DOMContentLoaded", function() {{
         const link = document.querySelector(`.site-nav a[href="${{document.location.pathname}}"]`);
         if (link) {{
-            link.classList.add("active")
+            const listItemElement = link.closest("li");
+            if (listItemElement) listItemElement.classList.add("active");
+
             const detailsElement = link.closest("details");
             if (detailsElement) {{
                 detailsElement.setAttribute("open", true);

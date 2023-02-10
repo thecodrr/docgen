@@ -47,7 +47,7 @@ markup::define! {
                 }
             }
 
-            body {
+            body.preload {
                 label[for="menu-toggle-switch", class="menu-toggle-button"] {
                     "☰"
                 }
@@ -63,15 +63,15 @@ markup::define! {
 
                         div[class="docgen-content"] {
                             @markup::raw(content)
-
-                            @if let Some(edit_link) = edit_link {
-                                a[href=edit_link] {
-                                    {"Edit this page"}
-                                }
-                            }
                         }
 
                         div[class="sidebar-right"] {
+                            @if let Some(edit_link) = edit_link {
+                                a[class="edit-link", href=edit_link] {
+                                    {"Edit this page"}
+                                }
+                            }
+
                             div[class="page-nav", id="page-nav"] {
                                 p[class="page-nav-header"] {
                                     {"On this page"}
@@ -195,26 +195,29 @@ markup::define! {
 
 
     NavigationLink<'a>(link: &'a Link) {
-        li {
-            @if link.children.len() > 0 {
-                details {
-                    summary {
-                        a[href={&link.path}] {
-                            @link.title
-                        }
-                    }
 
-                    ul {
-                        @for link in link.children.iter() {
-                            @NavigationLink { link: &link }
+            @if link.children.len() > 0 {
+                li.nested {
+                    details {
+                        summary {
+                            a[href={&link.path}] {
+                                @link.title
+                            }
+                        }
+
+                        ul {
+                            @for link in link.children.iter() {
+                                @NavigationLink { link: &link }
+                            }
                         }
                     }
                 }
             } else {
-                a[href={&link.path}] {
-                    @link.title
+                li {
+                    a[href={&link.path}] {
+                        @link.title
+                    }
                 }
             }
-        }
     }
 }

@@ -42,19 +42,32 @@ mod test {
     use crate::config::Config;
     use crate::Document;
     use std::collections::BTreeMap;
+    use std::time::SystemTime;
 
     fn page(path: &str, name: &str, content: &str) -> Document {
         let mut frontmatter = BTreeMap::new();
         frontmatter.insert("title".to_string(), name.to_string());
 
-        Document::new(Path::new(path), content.to_string(), frontmatter, "/")
+        Document::new(
+            Path::new(path),
+            content.to_string(),
+            frontmatter,
+            "/",
+            SystemTime::now(),
+        )
     }
 
     fn page_with_base_path(path: &str, name: &str, content: &str, base_path: &str) -> Document {
         let mut frontmatter = BTreeMap::new();
         frontmatter.insert("title".to_string(), name.to_string());
 
-        Document::new(Path::new(path), content.to_string(), frontmatter, base_path)
+        Document::new(
+            Path::new(path),
+            content.to_string(),
+            frontmatter,
+            base_path,
+            SystemTime::now(),
+        )
     }
 
     fn config(yaml: Option<&str>) -> Config {

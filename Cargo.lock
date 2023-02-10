@@ -206,9 +206,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.22"
+version = "0.4.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfd4d1b31faaa3a89d7934dbded3111da0d2ef28e3ebccdb4f0179f5929d1ef1"
+checksum = "16b0a3d9ed01224b22057780a37bb8c5dbfe1be8ba48678e7bf57ec4b385411f"
 dependencies = [
  "iana-time-zone",
  "js-sys",
@@ -535,6 +535,7 @@ dependencies = [
  "alphanumeric-sort",
  "bunt",
  "bus",
+ "chrono",
  "clap",
  "colorsys",
  "criterion",
@@ -564,6 +565,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "sitemap-rs",
  "slug",
  "syntect",
  "tiny_http",
@@ -1596,6 +1598,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7bd3e3206899af3f8b12af284fafc038cc1dc2b41d1b89dd17297221c5d225de"
 
 [[package]]
+name = "sitemap-rs"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "95b58125f0ab4317b5ba3cdc1f60696e47958760e356874c759334fa56ae1596"
+dependencies = [
+ "chrono",
+ "xml-builder",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2081,6 +2093,12 @@ dependencies = [
  "winapi 0.2.8",
  "winapi-build",
 ]
+
+[[package]]
+name = "xml-builder"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccb75a3f8ef413a4fb3eb7203031bc6707c220f110e18983134866fd44ce02b3"
 
 [[package]]
 name = "xml-rs"

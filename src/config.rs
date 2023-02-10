@@ -22,6 +22,7 @@ struct DocgenYaml {
     edit_root: Option<String>,
     base_path: Option<String>,
     docs_dir: Option<String>,
+    base_url: Option<String>,
 }
 
 impl DocgenYaml {
@@ -249,6 +250,7 @@ pub struct Config {
     out_dir: PathBuf,
     docs_dir: PathBuf,
     base_path: String,
+    base_url: Option<String>,
     edit_root: Option<String>,
     title: String,
     subtitle: String,
@@ -301,9 +303,15 @@ impl Config {
             preview_addr,
             livereload_addr,
             build_mode: BuildMode::Dev,
+            base_url: docgen_yaml.base_url,
         };
 
         Ok(config)
+    }
+
+    /// The title of the project
+    pub fn base_url(&self) -> &Option<String> {
+        &self.base_url
     }
 
     /// The title of the project

@@ -1,5 +1,6 @@
 use std::ffi::OsStr;
 use std::fs;
+use std::path::Path;
 use std::sync::mpsc::channel;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -12,6 +13,10 @@ use crate::navigation::{Link, Navigation};
 use crate::site::{BuildMode, SiteBackend};
 use crate::Document;
 use crate::{Error, Result};
+
+use chrono::{DateTime, Utc};
+use sitemap_rs::url::Url;
+use sitemap_rs::url_set::UrlSet;
 
 static INCLUDE_DIR: &str = "_include";
 static HEAD_FILE: &str = "_head.html";
@@ -94,12 +99,38 @@ impl<'a> SiteGenerator<'a> {
 
         let head_include = self.read_head_include()?;
 
+        self.build_sitemap(site);
         self.build_includes(site)?;
         self.build_assets(site)?;
         self.build_directory(self.root, &navigation, head_include.as_deref(), site)?;
         self.build_search_index(&self.root, site)?;
 
         Ok(())
+    }
+
+    fn build_sitemap<T: SiteBackend>(&self, site: &mut T) {
+        if let Some(base_url) = self.config.base_url() {
+            let base = url::Url::parse(base_url).unwrap();
+            let urls: Vec<Url> = self
+                .root
+                .into_iter()
+                .map(|doc| {
+                    let location = base.join(&doc.uri_path).unwrap().to_string();
+                    Url::builder(location)
+                        .last_modified(DateTime::<Utc>::from(doc.last_modified).into())
+                        .build()
+                        .unwrap()
+                })
+                .collect::<Vec<Url>>();
+
+            let url_set: UrlSet = UrlSet::new(urls).expect("failed a <urlset> validation");
+            let mut buf = Vec::<u8>::new();
+            url_set.write(&mut buf).unwrap();
+
+            site.add_file(Path::new("sitemap.xml"), &buf)
+                .map_err(|e| Error::io(e, format!("Could not write sitemap.xml")))
+                .unwrap();
+        }
     }
 
     fn read_head_include(&self) -> Result<Option<String>> {

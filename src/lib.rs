@@ -26,8 +26,9 @@ mod site_generator;
 mod watcher;
 
 use std::collections::{BTreeMap, HashMap};
-use std::fs;
+use std::fs::{self};
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 pub use build::BuildCommand;
 pub use config::Config;
@@ -82,6 +83,8 @@ pub struct Document {
     frontmatter: BTreeMap<String, String>,
     base_path: String,
     title: String,
+
+    last_modified: SystemTime,
 }
 
 impl Document {
@@ -91,10 +94,17 @@ impl Document {
     /// path inside the docs directory to the original file.
     fn load(absolute_path: &Path, relative_docs_path: &Path, base_path: &str) -> Self {
         let raw = fs::read_to_string(absolute_path).unwrap();
+        let metadata = fs::metadata(absolute_path).unwrap();
         let frontmatter =
             frontmatter::parse(&raw).expect("TODO: Print an error when frontmatter is busted");
 
-        Document::new(relative_docs_path, raw, frontmatter, base_path)
+        Document::new(
+            relative_docs_path,
+            raw,
+            frontmatter,
+            base_path,
+            metadata.modified().unwrap_or_else(|_| SystemTime::now()),
+        )
     }
 
     /// Creates a new document from its raw components
@@ -103,6 +113,7 @@ impl Document {
         raw: String,
         frontmatter: BTreeMap<String, String>,
         base_path: &str,
+        last_modified: SystemTime,
     ) -> Self {
         let is_root = path.ends_with("README.md");
         let html_path = if is_root {
@@ -160,6 +171,7 @@ impl Document {
             uri_path,
             title,
             parent,
+            last_modified,
         }
     }
 

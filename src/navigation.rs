@@ -244,6 +244,7 @@ mod test {
     use super::*;
     use std::collections::BTreeMap;
     use std::path::Path;
+    use std::time::SystemTime;
 
     use crate::docs_finder::document_sort;
     use crate::Document;
@@ -257,6 +258,7 @@ mod test {
             "Not important".to_string(),
             frontmatter,
             base_path.unwrap_or("/"),
+            SystemTime::now(),
         )
     }
 

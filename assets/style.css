@@ -530,6 +530,7 @@ th {
 }
 
 nav a {
+  padding: 7px 10px;
   text-decoration: none;
   color: inherit;
   display: block;
@@ -544,7 +545,6 @@ nav ul {
 }
 
 nav ul li {
-  padding: 7px 10px;
   margin-bottom: 3px;
   border-radius: 5px;
   cursor: pointer;
@@ -604,7 +604,10 @@ nav summary::after {
   background-color: var(--fg-dim);
   mask: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiM4ODg4ODgiIGQ9Ik04LjU5IDE2LjU4TDEzLjE3IDEyTDguNTkgNy40MUwxMCA2bDYgNmwtNiA2bC0xLjQxLTEuNDJaIi8+PC9zdmc+)
     no-repeat 50% 50%;
+  -webkit-mask: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiM4ODg4ODgiIGQ9Ik04LjU5IDE2LjU4TDEzLjE3IDEyTDguNTkgNy40MUwxMCA2bDYgNmwtNiA2bC0xLjQxLTEuNDJaIi8+PC9zdmc+)
+    no-repeat 50% 50%;
   mask-size: cover;
+  -webkit-mask-size: cover;
 
   transform: rotate(0);
   transition: transform 250ms ease;
@@ -620,7 +623,7 @@ nav details[open] summary::after {
 
 li.nested {
   overflow: hidden;
-  min-height: 18.4px;
+  min-height: 32.4px;
 }
 
 nav details {
@@ -652,6 +655,10 @@ nav details[open] {
   mask: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiM4ODg4ODgiIGQ9Im0xNC4wNiA5bC45NC45NEw1LjkyIDE5SDV2LS45MkwxNC4wNiA5bTMuNi02Yy0uMjUgMC0uNTEuMS0uNy4yOWwtMS44MyAxLjgzbDMuNzUgMy43NWwxLjgzLTEuODNjLjM5LS4zOS4zOS0xLjA0IDAtMS40MWwtMi4zNC0yLjM0Yy0uMi0uMi0uNDUtLjI5LS43MS0uMjltLTMuNiAzLjE5TDMgMTcuMjVWMjFoMy43NUwxNy44MSA5Ljk0bC0zLjc1LTMuNzVaIi8+PC9zdmc+)
     no-repeat 50% 50%;
   mask-size: cover;
+  -webkit-mask: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiM4ODg4ODgiIGQ9Im0xNC4wNiA5bC45NC45NEw1LjkyIDE5SDV2LS45MkwxNC4wNiA5bTMuNi02Yy0uMjUgMC0uNTEuMS0uNy4yOWwtMS44MyAxLjgzbDMuNzUgMy43NWwxLjgzLTEuODNjLjM5LS4zOS4zOS0xLjA0IDAtMS40MWwtMi4zNC0yLjM0Yy0uMi0uMi0uNDUtLjI5LS43MS0uMjltLTMuNiAzLjE5TDMgMTcuMjVWMjFoMy43NUwxNy44MSA5Ljk0bC0zLjc1LTMuNzVaIi8+PC9zdmc+)
+    no-repeat 50% 50%;
+  mask-size: cover;
+  -webkit-mmask-size: cover;
 }
 
 .page-nav-header {

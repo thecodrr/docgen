@@ -530,7 +530,7 @@ dependencies = [
 
 [[package]]
 name = "docgen"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "alphanumeric-sort",
  "bunt",

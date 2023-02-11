@@ -272,6 +272,10 @@ th {
   margin-top: 0px;
 }
 
+.tree {
+  padding: 0px 0px 0px 5px;
+}
+
 .sidebar-left,
 .sidebar-right {
   padding-top: 20px;
@@ -279,13 +283,17 @@ th {
 }
 
 .sidebar-left,
-.sidebar-right .page-nav {
+.sidebar-right {
   position: sticky;
   top: 0;
 }
 
 .sidebar-left {
   padding-right: 50px;
+}
+
+.sidebar-right {
+  align-self: flex-start;
 }
 
 .menu-toggle-button,
@@ -634,6 +642,7 @@ nav details {
 nav details[open] {
   max-height: 500px;
 }
+
 /* Right sidebar ------------------------------------------------------- */
 
 .sidebar-right .edit-link {

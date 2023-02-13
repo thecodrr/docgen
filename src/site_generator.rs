@@ -294,13 +294,21 @@ impl<'a> SiteGenerator<'a> {
             None
         };
 
+        let site_title = self.config.title().to_string();
+        let meta_title = self
+            .config
+            .meta()
+            .as_ref()
+            .map(|a| a.title.as_ref().unwrap_or_else(|| &site_title))
+            .unwrap();
+
         let (sender, receiver) = channel();
 
         docs.par_iter().for_each_with(sender, |sender, doc| {
             let page_subtitle = if doc.uri_path == "/" {
                 None
             } else {
-                Some(format!(" — {}", self.config.title()))
+                Some(format!(" | {}", meta_title))
             };
 
             let data = crate::page_template::Page {

@@ -17,6 +17,7 @@ pub struct DocgenYaml {
     subtitle: Option<String>,
     port: Option<u16>,
     logo: Option<PathBuf>,
+    meta: Option<Meta>,
     navigation: Option<Vec<Navigation>>,
     footer: Option<Footer>,
     edit_root: Option<String>,
@@ -148,6 +149,11 @@ pub struct Navigation {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct Meta {
+    pub title: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct Footer {
     pub groups: Option<Vec<FooterGroup>>,
     pub copyright: Option<String>,
@@ -172,8 +178,6 @@ pub enum NavChildren {
     WildCard(String),
     List(Vec<Navigation>),
 }
-
-// static DEFAULT_THEME_COLOR: &str = "#445282";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Themes {
@@ -246,6 +250,7 @@ pub struct Config {
     color: bool,
     allow_failed_checks: bool,
     project_root: PathBuf,
+    meta: Option<Meta>,
     out_dir: PathBuf,
     docs_dir: PathBuf,
     base_path: String,
@@ -296,6 +301,7 @@ impl Config {
             subtitle: docgen_yaml.subtitle.unwrap_or(String::from("DOCS")),
             edit_root: docgen_yaml.edit_root,
             footer: docgen_yaml.footer,
+            meta: docgen_yaml.meta,
             logo: docgen_yaml
                 .logo
                 .map(|p| Link::path_to_uri_with_extension(&p))
@@ -318,6 +324,11 @@ impl Config {
     /// The title of the project
     pub fn footer(&self) -> &Option<Footer> {
         &self.footer
+    }
+
+    /// The title of the project
+    pub fn meta(&self) -> &Option<Meta> {
+        &self.meta
     }
 
     /// The title of the project

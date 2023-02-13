@@ -131,7 +131,7 @@ impl<'a> SiteGenerator<'a> {
             let mut buf = Vec::<u8>::new();
             url_set.write(&mut buf).unwrap();
 
-            site.add_file(Path::new("/sitemap.xml"), &buf)
+            site.add_file(Path::new("sitemap.xml"), &buf)
                 .map_err(|e| Error::io(e, format!("Could not write sitemap.xml")))
                 .unwrap();
         }

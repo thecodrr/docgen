@@ -200,7 +200,7 @@ markup::define! {
                 li.nested {
                     details {
                         summary {
-                            a[href={&link.path}] {
+                            span {
                                 @link.title
                             }
                         }

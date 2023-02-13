@@ -538,7 +538,8 @@ th {
   color: var(--header-fg);
 }
 
-nav a {
+nav a,
+nav span {
   padding: 7px 10px;
   text-decoration: none;
   color: inherit;
@@ -591,7 +592,7 @@ nav li.active:not(li.nested):hover {
   filter: brightness(90%);
 }
 
-nav details[open] summary a {
+nav details[open] summary span {
   font-weight: 600;
 }
 

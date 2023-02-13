@@ -12,7 +12,7 @@ use crate::site::BuildMode;
 use crate::{Error, Result};
 
 #[derive(Debug, Clone, Deserialize)]
-struct DocgenYaml {
+pub struct DocgenYaml {
     title: String,
     subtitle: Option<String>,
     port: Option<u16>,
@@ -26,7 +26,7 @@ struct DocgenYaml {
 }
 
 impl DocgenYaml {
-    fn find(root: &Path) -> Option<PathBuf> {
+    pub fn find(root: &Path) -> Option<PathBuf> {
         if root.join("docgen.yaml").exists() {
             Some(root.join("docgen.yaml"))
         } else if root.join("docgen.yml").exists() {
@@ -256,8 +256,8 @@ pub struct Config {
     logo: Option<String>,
     navigation: Option<Vec<NavRule>>,
     build_mode: BuildMode,
-    preview_addr: SocketAddr,
-    livereload_addr: SocketAddr,
+    pub preview_addr: SocketAddr,
+    pub livereload_addr: SocketAddr,
     footer: Option<Footer>,
 }
 

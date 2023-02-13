@@ -5,7 +5,7 @@ use std::time::Instant;
 use bunt::termcolor::{ColorChoice, StandardStream};
 use crossbeam_channel::bounded;
 
-use crate::config::Config;
+use crate::config::{project_root, Config, DocgenYaml};
 use crate::livereload_server::LivereloadServer;
 use crate::preview_server::PreviewServer;
 use crate::site::Site;
@@ -26,6 +26,12 @@ impl ServeCommand {
         } else {
             StandardStream::stdout(ColorChoice::Never)
         };
+        let project_dir = project_root().unwrap_or_else(|| {
+            println!("Could not find a docgen project in this directory, or its parents.");
+            std::process::exit(1);
+        });
+        let config_path = DocgenYaml::find(&project_dir).unwrap();
+
         let root = docs_finder::find(&config);
 
         let site = Arc::new(Mutex::new(Site::in_memory(config.clone())));
@@ -49,7 +55,10 @@ impl ServeCommand {
         // Watcher ------------------------------------
 
         let (watch_snd, watch_rcv) = bounded(128);
-        let watcher = Watcher::new(vec![config.docs_dir().to_path_buf()], watch_snd);
+        let watcher = Watcher::new(
+            vec![config.docs_dir().to_path_buf(), config_path],
+            watch_snd,
+        );
         thread::Builder::new()
             .name("watcher".into())
             .spawn(move || watcher.run())
@@ -84,13 +93,17 @@ impl ServeCommand {
         // and inform the websocket listeners.
 
         for (path, msg) in watch_rcv {
+            let mut new_config = Config::load(&project_dir, false)?;
+            new_config.livereload_addr = config.livereload_addr;
+            new_config.preview_addr = config.preview_addr;
+
             bunt::writeln!(stdout, "    File {$bold}{}{/$} {}.", path.display(), msg)?;
 
             let mut site_write = site.lock().unwrap();
             site_write.reset().unwrap();
             let start = Instant::now();
-            let root = docs_finder::find(&config);
-            site_write.rebuild(config.clone(), &root).unwrap();
+            let root = docs_finder::find(&new_config);
+            site_write.rebuild(new_config, &root).unwrap();
             let duration = start.elapsed();
             drop(site_write);
 

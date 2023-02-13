@@ -196,16 +196,14 @@ pub enum DirIncludeRule {
 impl NavRule {
     fn from_yaml_input(input: Vec<Navigation>) -> Vec<NavRule> {
         let mut rules = vec![];
-
         for item in input {
-            if item.path.is_file() {
-                rules.push(NavRule::File(item.path.clone()));
-            } else if item.path.is_dir() {
+            if item.children.is_some() {
                 let dir_rules = Self::build_directory_rules(&item);
                 rules.push(dir_rules);
+            } else {
+                rules.push(NavRule::File(item.path.clone()));
             }
         }
-
         rules
     }
 
@@ -221,10 +219,10 @@ impl NavRule {
                     paths
                         .iter()
                         .map(|p| {
-                            if p.path.is_file() {
-                                NavRule::File(p.path.clone())
-                            } else {
+                            if p.children.is_some() {
                                 Self::build_directory_rules(p)
+                            } else {
+                                NavRule::File(p.path.clone())
                             }
                         })
                         .collect::<Vec<_>>(),

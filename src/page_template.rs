@@ -15,6 +15,7 @@ markup::define! {
     navigation: &'a String,
     custom_head: Option<&'a str>,
     page_title: &'a str,
+    page_subtitle: Option<String>,
     build_mode: BuildMode,
     init_script: &'a String,
     dev_script: &'a String,
@@ -30,7 +31,12 @@ markup::define! {
             head {
                 meta[charset="utf-8"];
 
-                title { @page_title }
+                title {
+                    @page_title
+                    @if let Some(page_subtitle) = page_subtitle {
+                        @page_subtitle
+                    }
+                }
 
                 meta[name="description",content="Documentation for ".to_string() + page_title];
 

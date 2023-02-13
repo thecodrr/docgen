@@ -118,12 +118,12 @@ impl<'a> SiteGenerator<'a> {
             let urls: Vec<Url> = self
                 .root
                 .into_iter()
-                .map(|doc| {
+                .filter_map(|doc| {
                     let location = base.join(&doc.uri_path).unwrap().to_string();
                     Url::builder(location)
                         .last_modified(DateTime::<Utc>::from(doc.last_modified).into())
                         .build()
-                        .unwrap()
+                        .ok()
                 })
                 .collect::<Vec<Url>>();
 
@@ -297,17 +297,18 @@ impl<'a> SiteGenerator<'a> {
         let (sender, receiver) = channel();
 
         docs.par_iter().for_each_with(sender, |sender, doc| {
-            let page_title = if doc.uri_path == "/" {
-                self.config.title()
+            let page_subtitle = if doc.uri_path == "/" {
+                None
             } else {
-                &doc.title
+                Some(format!(" — {}", self.config.title()))
             };
 
             let data = crate::page_template::Page {
                 content: doc.html(),
                 headings: doc.headings(),
                 build_mode: self.config.build_mode(),
-                page_title,
+                page_title: &doc.title,
+                page_subtitle,
 
                 edit_link: self.config.build_edit_link(&doc.path),
 

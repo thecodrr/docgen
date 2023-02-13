@@ -16,6 +16,7 @@ mod frontmatter;
 mod init;
 mod livereload_server;
 pub mod markdown;
+mod nav;
 pub mod navigation;
 mod page_template;
 mod preview_server;
@@ -36,6 +37,7 @@ pub use error::Error;
 pub use init::InitCommand;
 use markdown::extensions::toc::Heading;
 use markdown::parser::{MarkdownParser, ParseOptions, ParsedMarkdown};
+pub use nav::NavigationCommand;
 pub use serve::{ServeCommand, ServeOptions};
 pub use site::BuildMode;
 
@@ -172,6 +174,15 @@ impl Document {
             title,
             parent,
             last_modified,
+        }
+    }
+
+    fn src(&self) -> String {
+        let is_root = self.path.ends_with("README.md");
+        if is_root {
+            self.path.parent().unwrap().to_string_lossy().to_string()
+        } else {
+            self.path.to_string_lossy().to_string()
         }
     }
 

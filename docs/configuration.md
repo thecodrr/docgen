@@ -1,6 +1,5 @@
 ---
 title: Configuration
-index: 4
 ---
 
 # Configuration

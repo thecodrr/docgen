@@ -51,7 +51,7 @@ impl<'a> Navigation<'a> {
                 title: title.to_string(),
                 path: uri_path.to_string(),
                 children: vec![],
-                index: doc.index,
+                src: doc.src(),
             };
 
             if is_top_most && is_root_readme {
@@ -63,7 +63,6 @@ impl<'a> Navigation<'a> {
                 }
             } else if is_root_readme {
                 let children = directories.entry(uri_path.to_string()).or_insert(vec![]);
-                children.sort_by(|a, b| a.index.cmp(&b.index));
 
                 link.children.append(children);
                 directories.entry(parent_path).or_insert(vec![]).push(link);
@@ -73,7 +72,6 @@ impl<'a> Navigation<'a> {
         }
 
         let mut links = directories.remove(&String::from(base_path)).unwrap();
-        links.sort_by(|a, b| a.index.cmp(&b.index));
         links
     }
 
@@ -141,9 +139,7 @@ impl<'a> Navigation<'a> {
     /// Matches a path provided in a NavRule to a Link. Recursively searches through
     /// the link children to find a match.
     fn find_matching_link(&self, path: &Path, links: &[Link]) -> Option<Link> {
-        let mut without_docs_part = path.components();
-        let _ = without_docs_part.next();
-        let doc_path = Link::path_to_uri(without_docs_part.as_path());
+        let doc_path = Link::path_to_uri(path);
 
         let search_result = links.iter().find(|link| {
             let link_path = link.path.strip_prefix(self.config.base_path()).unwrap();
@@ -167,10 +163,16 @@ impl<'a> Navigation<'a> {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Link {
-    pub path: String,
-    pub title: String,
+    #[serde(rename(serialize = "path"))]
+    pub src: String,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub children: Vec<Link>,
-    pub index: u32,
+
+    #[serde(skip)]
+    pub path: String,
+
+    #[serde(skip)]
+    pub title: String,
 }
 
 impl Link {
@@ -265,7 +267,7 @@ mod test {
     fn config(yaml: Option<&str>) -> Config {
         let conf = yaml.unwrap_or("---\ntitle: My project\n");
 
-        Config::from_yaml_str(&Path::new("project"), conf).unwrap()
+        Config::from_yaml_str(&Path::new("project"), conf, false).unwrap()
     }
 
     #[test]

@@ -36,6 +36,10 @@ fn main() {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("nav")
+                .about("Regenerate navigation")
+        )
+        .subcommand(
             SubCommand::with_name("serve")
                 .about(
                     "Starts a live reloading development server to serve your documentation site",
@@ -60,6 +64,7 @@ fn main() {
 
     let result = match matches.subcommand() {
         ("init", Some(cmd)) => init(cmd),
+        ("nav", Some(cmd)) => nav(cmd),
         ("build", Some(cmd)) => build(cmd),
         ("serve", Some(cmd)) => serve(cmd),
         _ => Ok(()),
@@ -89,7 +94,7 @@ fn build(cmd: &ArgMatches) -> docgen::Result<()> {
         std::process::exit(1);
     });
 
-    let mut config = docgen::Config::load(&project_dir)?;
+    let mut config = docgen::Config::load(&project_dir, false)?;
     if cmd.is_present("release") {
         config.set_build_mode(docgen::BuildMode::Release);
     }
@@ -112,7 +117,7 @@ fn serve(cmd: &ArgMatches) -> docgen::Result<()> {
     });
 
     let mut options = docgen::ServeOptions::default();
-    let mut config = docgen::Config::load(&project_dir)?;
+    let mut config = docgen::Config::load(&project_dir, false)?;
 
     if let Some(p) = cmd.value_of("port") {
         options.port = Some(p.parse::<u16>().unwrap());
@@ -123,4 +128,15 @@ fn serve(cmd: &ArgMatches) -> docgen::Result<()> {
     }
 
     docgen::ServeCommand::run(options, config)
+}
+
+fn nav(_cmd: &ArgMatches) -> docgen::Result<()> {
+    let project_dir = docgen::config::project_root().unwrap_or_else(|| {
+        println!("Could not find a docgen project in this directory, or its parents.");
+        std::process::exit(1);
+    });
+
+    let config = docgen::Config::load(&project_dir, true)?;
+
+    docgen::NavigationCommand::run(config)
 }

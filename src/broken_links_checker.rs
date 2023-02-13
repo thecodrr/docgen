@@ -73,7 +73,7 @@ mod test {
     fn config(yaml: Option<&str>) -> Config {
         let conf = yaml.unwrap_or("---\ntitle: My project\n");
 
-        Config::from_yaml_str(&Path::new("project"), conf).unwrap()
+        Config::from_yaml_str(&Path::new("project"), conf, false).unwrap()
     }
 
     #[test]

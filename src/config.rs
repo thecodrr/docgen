@@ -70,10 +70,11 @@ impl DocgenYaml {
             config: &DocgenYaml,
             project_root: &Path,
         ) -> Result<()> {
-            if !project_root.join(&nav.path).exists() {
+            let doc_path = config.docs_dir(project_root).join(&nav.path);
+            if !doc_path.exists() {
                 return Err(Error::new(format!(
-                    "Could not find file specified in navigation at {}",
-                    nav.path.display()
+                    "Could not find file specified in navigation at {}. Fix the path or run docgen nav to regenerate navigation.",
+                    doc_path.display()
                 )));
             }
 
@@ -263,21 +264,23 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load(project_root: &Path) -> Result<Self> {
+    pub fn load(project_root: &Path, skip_validation: bool) -> Result<Self> {
         let path = DocgenYaml::find(&project_root)
             .ok_or(Error::new("Could not find docgen.yaml in project"))?;
 
         let yaml =
             fs::read_to_string(path).map_err(|_| Error::new("Could not read docgen.yaml file"))?;
 
-        Config::from_yaml_str(project_root, &yaml)
+        Config::from_yaml_str(project_root, &yaml, skip_validation)
     }
 
-    pub fn from_yaml_str(project_root: &Path, yaml: &str) -> Result<Self> {
+    pub fn from_yaml_str(project_root: &Path, yaml: &str, skip_validation: bool) -> Result<Self> {
         let mut docgen_yaml: DocgenYaml = serde_yaml::from_str(yaml)
             .map_err(|e| Error::yaml(e, "Could not parse docgen.yaml"))?;
 
-        docgen_yaml.validate(project_root)?;
+        if !skip_validation {
+            docgen_yaml.validate(project_root)?;
+        }
 
         let preview_addr = get_safe_addr("127.0.0.1", docgen_yaml.port.unwrap_or_else(|| 4001))
             .expect("Failed to get address for preview server.");
@@ -441,7 +444,7 @@ mod test {
             logo: i-do-not-exist.png
         "};
 
-        let error = Config::from_yaml_str(Path::new(""), yaml).unwrap_err();
+        let error = Config::from_yaml_str(Path::new(""), yaml, false).unwrap_err();
 
         assert!(
             format!("{}", error).contains("Could not find logo specified in docgen.yaml"),
@@ -458,7 +461,7 @@ mod test {
             base_path: not/absolute
         "};
 
-        let error = Config::from_yaml_str(Path::new(""), yaml).unwrap_err();
+        let error = Config::from_yaml_str(Path::new(""), yaml, false).unwrap_err();
 
         println!("{:?}", error);
 
@@ -478,7 +481,7 @@ mod test {
             base_path: /docs
         "};
 
-        let config = Config::from_yaml_str(Path::new(""), yaml).unwrap();
+        let config = Config::from_yaml_str(Path::new(""), yaml, false).unwrap();
 
         assert_eq!(config.base_path(), "/docs/");
     }
@@ -490,7 +493,7 @@ mod test {
             title: The Title
         "};
 
-        let config = Config::from_yaml_str(Path::new(""), yaml).unwrap();
+        let config = Config::from_yaml_str(Path::new(""), yaml, false).unwrap();
 
         assert_eq!(config.base_path(), "/");
     }
@@ -505,7 +508,7 @@ mod test {
                 children: not-wildcard
         "};
 
-        let error = Config::from_yaml_str(Path::new(""), yaml).unwrap_err();
+        let error = Config::from_yaml_str(Path::new(""), yaml, false).unwrap_err();
 
         assert!(
             format!("{}", error).contains(

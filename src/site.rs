@@ -259,7 +259,8 @@ mod test {
         let path = Path::new("/workspace/site/index.html");
         let content = "An Content";
 
-        let config = Config::from_yaml_str(Path::new("/workspace"), "---\ntitle: Title").unwrap();
+        let config =
+            Config::from_yaml_str(Path::new("/workspace"), "---\ntitle: Title", false).unwrap();
 
         let mut site = InMemorySite::new(config);
 

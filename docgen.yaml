@@ -2,3 +2,21 @@
 title: Docgen
 subtitle: DOCS
 edit_root: https://github.com/thecodrr/docgen/blob/master/
+
+navigation:
+  - path: installing.md
+  - path: tutorial.md
+  - path: features
+    children:
+      - path: features/assets.md
+      - path: features/checks.md
+      - path: features/custom-head-tag.md
+      - path: features/custom-navigation.md
+      - path: features/look-and-feel.md
+      - path: features/markdown.md
+      - path: features/math-notation.md
+      - path: features/mermaid-js.md
+      - path: features/tabs.md
+  - path: deployment.md
+  - path: configuration.md
+  - path: contributor-guide.md

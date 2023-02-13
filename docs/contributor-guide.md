@@ -1,6 +1,5 @@
 ---
 title: Contributor guide
-index: 5
 ---
 
 # Contributor guide

@@ -504,13 +504,13 @@ th {
 }
 
 .docgen-content li {
-  padding-bottom: 10px;
+  padding-bottom: 5px;
   line-height: 1.8em;
 }
 
 .docgen-content li ul,
 .docgen-content li ol {
-  padding-top: 10px;
+  padding-top: 5px;
 }
 
 /* Left sidebar -------------------------------------------------------- */

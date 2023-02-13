@@ -505,6 +505,7 @@ th {
 
 .docgen-content li {
   padding-bottom: 10px;
+  line-height: 1.8em;
 }
 
 .docgen-content li ul,

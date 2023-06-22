@@ -15,6 +15,7 @@ markup::define! {
     navigation: &'a String,
     custom_head: Option<&'a str>,
     page_title: &'a str,
+    page_description: &'a str,
     page_subtitle: Option<String>,
     build_mode: BuildMode,
     init_script: &'a String,
@@ -38,7 +39,7 @@ markup::define! {
                     }
                 }
 
-                meta[name="description",content="Documentation for ".to_string() + page_title];
+                meta[name="description",content=page_description];
 
                 meta[name="viewport",content="width=device-width, initial-scale=1"];
 

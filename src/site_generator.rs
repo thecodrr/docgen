@@ -316,6 +316,7 @@ impl<'a> SiteGenerator<'a> {
                 headings: doc.headings(),
                 build_mode: self.config.build_mode(),
                 page_title: &doc.title,
+                page_description: &doc.description,
                 page_subtitle,
 
                 edit_link: self.config.build_edit_link(&doc.path),

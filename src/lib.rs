@@ -85,6 +85,7 @@ pub struct Document {
     frontmatter: BTreeMap<String, String>,
     base_path: String,
     title: String,
+    description: String,
 
     last_modified: SystemTime,
 }
@@ -158,6 +159,12 @@ impl Document {
             .unwrap_or_else(|| path.file_stem().unwrap().to_str().unwrap())
             .to_string();
 
+        let description = frontmatter
+            .get("description")
+            .map(|t| t.to_owned())
+            .or_else(|| Some("Documentation for ".to_owned() + &title))
+            .unwrap();
+
         Document {
             index: frontmatter
                 .get("index")
@@ -171,6 +178,7 @@ impl Document {
             frontmatter,
             html_path,
             uri_path,
+            description,
             title,
             parent,
             last_modified,

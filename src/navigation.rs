@@ -105,10 +105,9 @@ impl<'a> Navigation<'a> {
             };
 
             match rule {
-                NavRule::File(path) => links.push(
-                    self.find_matching_link(path, &default)
-                        .expect("No matching link found"),
-                ),
+                NavRule::File(path) => links.push(self.find_matching_link(path, &default).expect(
+                    &format!("{}: {}", "No matching link found at", path.display()),
+                )),
                 NavRule::Dir(path, dir_rule) => {
                     let mut index_link = self
                         .find_matching_link(path, &default)

@@ -126,16 +126,13 @@ impl Document {
         };
         let uri_path = format!("{}{}", base_path, Link::path_to_uri(&html_path));
 
-        let parent = Path::new(&uri_path)
-            .parent()
-            .map(|s| {
-                if s.ends_with("/") {
-                    s.to_path_buf()
-                } else {
-                    s.join("")
-                }
-            })
-            .unwrap_or_else(|| Path::new("/").to_path_buf());
+        let mut path_elements = uri_path.split('/').collect::<Vec<_>>();
+        path_elements.pop();
+        let parent = if path_elements.len() == 1 {
+            Path::new("/").to_path_buf()
+        } else {
+            Path::new(&path_elements.join("/")).to_path_buf()
+        };
 
         let markdown_options = {
             let mut opts = ParseOptions::default();

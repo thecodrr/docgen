@@ -124,13 +124,23 @@ impl Document {
         } else {
             path.with_extension("html")
         };
-        let uri_path = format!("{}{}", base_path, Link::path_to_uri(&html_path));
 
-        let mut path_elements = uri_path.split('/').collect::<Vec<_>>();
+        let mut uri_path = format!("{}{}", base_path, Link::path_to_uri(&html_path));
+        if is_root && !uri_path.ends_with("/") {
+            uri_path.push_str("/");
+        }
+
+        let mut path_elements = uri_path
+            .trim_end_matches("/")
+            .split('/')
+            .collect::<Vec<_>>();
+
         path_elements.pop();
         let parent = if path_elements.len() == 1 {
             Path::new("/").to_path_buf()
         } else {
+            // parent path must always end with /
+            path_elements.push("");
             Path::new(&path_elements.join("/")).to_path_buf()
         };
 

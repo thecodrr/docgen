@@ -162,7 +162,7 @@ mod test {
         let config = config(Some(&indoc! {"
         ---
         title: Not Interesting
-        base_path: /not_docs
+        base_path: /not_docs/
         "}));
 
         let root = vec![
@@ -170,11 +170,11 @@ mod test {
                 "README.md",
                 "Getting Started",
                 "[I'm on a](/nested/)\n[highway to hell](/nested/other.html)",
-                "/not_docs",
+                "/not_docs/",
             ),
-            page_with_base_path("other.md", "Getting Started", "No links!", "/not_docs"),
-            page_with_base_path("nested/README.md", "Nested", "Content", "/not_docs"),
-            page_with_base_path("nested/other.md", "Nested Child", "No links!", "/not_docs"),
+            page_with_base_path("other.md", "Getting Started", "No links!", "/not_docs/"),
+            page_with_base_path("nested/README.md", "Nested", "Content", "/not_docs/"),
+            page_with_base_path("nested/other.md", "Nested Child", "No links!", "/not_docs/"),
         ];
         let mut site = Site::in_memory(config.clone());
         site.build(config.clone(), &root).unwrap();

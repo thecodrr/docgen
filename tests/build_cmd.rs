@@ -13,7 +13,9 @@ integration_test!(build_smoke_test, |area| {
     area.mkdir("docs");
     area.write_file(
         Path::new("docs").join("README.md"),
-        indoc! {"
+        indoc! {"---
+        title: Test Project
+        ---
         # Some content
 
         This is some text
@@ -127,7 +129,7 @@ integration_test!(build_navigation_nested, |area| {
     assert_success(&result);
 
     let index = Path::new("site").join("index.html");
-    area.assert_contains(&index, "<a href=\"/nested/\">Nested</a>");
+    area.assert_contains(&index, "<span>Nested</span>");
     area.assert_contains(&index, "<a href=\"/nested/howto_build\">How-To Build</a>");
 
     area.assert_exists(Path::new("site").join("nested").join("index.html"));
@@ -422,7 +424,7 @@ integration_test!(base_path, |area| {
         indoc! {"
     ---
     title: Base Path
-    base_path: /docs
+    base_path: /docs/
     "}
         .as_bytes(),
     );
@@ -450,9 +452,9 @@ integration_test!(base_path_with_custom_navigation, |area| {
         indoc! {"
     ---
     title: Base Path
-    base_path: /docs
+    base_path: /docs/
     navigation:
-        - path: docs/other.md
+        - path: other.md
     "}
         .as_bytes(),
     );
@@ -488,7 +490,7 @@ integration_test!(base_path_with_logo, |area| {
         indoc! {"
     ---
     title: Base Path
-    base_path: /docs
+    base_path: /docs/
     logo: assets/fake-logo.png
     "}
         .as_bytes(),
@@ -513,8 +515,7 @@ integration_test!(issue_18, |area| {
     ---
     title: Test project
     navigation:
-        - path: docs/README.md
-        - path: docs/another_file.md
+        - path: another_file.md
     "}
         .as_bytes(),
     );

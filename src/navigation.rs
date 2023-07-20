@@ -39,6 +39,10 @@ impl<'a> Navigation<'a> {
         directories.insert(String::from(base_path), vec![]);
 
         for doc in docs {
+            if doc.src() == "" {
+                continue;
+            }
+
             let uri_path = &doc.uri_path;
             let html_path = &doc.html_path;
             let title = &doc.title;
@@ -71,8 +75,7 @@ impl<'a> Navigation<'a> {
             }
         }
 
-        let mut links = directories.remove(&String::from(base_path)).unwrap();
-        links
+        directories.remove(&String::from(base_path)).unwrap()
     }
 
     /// Customizes the navigation tree given some rules provided through the
@@ -390,8 +393,8 @@ mod test {
         docs.par_sort_by(document_sort);
 
         let rules = vec![
-            NavRule::File(PathBuf::from("docs/one.md")),
-            NavRule::Dir(PathBuf::from("docs/child"), Some(DirIncludeRule::WildCard)),
+            NavRule::File(PathBuf::from("one.md")),
+            NavRule::Dir(PathBuf::from("child"), Some(DirIncludeRule::WildCard)),
         ];
 
         insta::with_settings!({
@@ -420,16 +423,13 @@ mod test {
         docs.par_sort_by(document_sort);
 
         let rules = vec![
-            NavRule::File(PathBuf::from("docs").join("one.md")),
+            NavRule::File(PathBuf::from("one.md")),
             NavRule::Dir(
-                PathBuf::from("docs").join("child"),
+                PathBuf::from("child"),
                 Some(DirIncludeRule::Explicit(vec![NavRule::Dir(
-                    PathBuf::from("docs").join("child").join("nested"),
+                    PathBuf::from("child").join("nested"),
                     Some(DirIncludeRule::Explicit(vec![NavRule::File(
-                        PathBuf::from("docs")
-                            .join("child")
-                            .join("nested")
-                            .join("four.md"),
+                        PathBuf::from("child").join("nested").join("four.md"),
                     )])),
                 )])),
             ),
@@ -456,9 +456,7 @@ mod test {
         ];
         docs.par_sort_by(document_sort);
 
-        let rules = vec![NavRule::File(
-            PathBuf::from("docs").join("child").join("three.md"),
-        )];
+        let rules = vec![NavRule::File(PathBuf::from("child").join("three.md"))];
 
         insta::with_settings!({
             description => "Manual menu file from nested directory",
@@ -482,9 +480,9 @@ mod test {
         docs.par_sort_by(document_sort);
 
         let rules = vec![NavRule::Dir(
-            PathBuf::from("docs").join("child"),
+            PathBuf::from("child"),
             Some(DirIncludeRule::Explicit(vec![NavRule::File(
-                PathBuf::from("docs").join("one.md"),
+                PathBuf::from("one.md"),
             )])),
         )];
 
@@ -505,7 +503,7 @@ mod test {
         let config = config(Some(indoc! {"
         ---
         title: Not in the root
-        base_path: /example
+        base_path: /example/
         "}));
 
         let mut docs = vec![

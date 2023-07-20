@@ -4,9 +4,9 @@ description: Manual menu file from nested directory
 ---
 [
     Link {
+        src: "child/three.md",
+        children: [],
         path: "/child/three",
         title: "Three",
-        children: [],
-        index: 4294967295,
     },
 ]

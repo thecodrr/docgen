@@ -4,29 +4,29 @@ description: Manual menu nested
 ---
 [
     Link {
+        src: "one.md",
+        children: [],
         path: "/one",
         title: "One",
-        children: [],
-        index: 4294967295,
     },
     Link {
-        path: "/child/",
-        title: "Nested Root",
+        src: "child",
         children: [
             Link {
-                path: "/child/nested/",
-                title: "Nested Root",
+                src: "child/nested",
                 children: [
                     Link {
+                        src: "child/nested/four.md",
+                        children: [],
                         path: "/child/nested/four",
                         title: "Four",
-                        children: [],
-                        index: 4294967295,
                     },
                 ],
-                index: 4294967295,
+                path: "/child/nested/",
+                title: "Nested Root",
             },
         ],
-        index: 4294967295,
+        path: "/child/",
+        title: "Nested Root",
     },
 ]

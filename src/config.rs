@@ -124,7 +124,10 @@ impl DocgenYaml {
             }
 
             if !path.ends_with("/") {
-                path.push('/');
+                return Err(Error::new(format!(
+                    "Base path must end with /. Got `{}`.",
+                    path
+                )));
             }
         }
 
@@ -201,7 +204,7 @@ impl NavRule {
     fn from_yaml_input(input: Vec<Navigation>) -> Vec<NavRule> {
         let mut rules = vec![];
         for item in input {
-            if item.children.is_some() {
+            if item.children.is_some() || item.path.is_dir() {
                 let dir_rules = Self::build_directory_rules(&item);
                 rules.push(dir_rules);
             } else {
@@ -483,19 +486,6 @@ mod test {
     }
 
     #[test]
-    fn validate_base_path_ends_with_slash() {
-        let yaml = indoc! {"
-            ---
-            title: The Title
-            base_path: /docs
-        "};
-
-        let config = Config::from_yaml_str(Path::new(""), yaml, false).unwrap();
-
-        assert_eq!(config.base_path(), "/docs/");
-    }
-
-    #[test]
     fn validate_default_base_path() {
         let yaml = indoc! {"
             ---
@@ -513,7 +503,7 @@ mod test {
             ---
             title: The Title
             navigation:
-              - path: docs/tutorial.md
+              - path: tutorial.md
                 children: not-wildcard
         "};
 

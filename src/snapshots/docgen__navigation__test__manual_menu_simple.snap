@@ -4,22 +4,22 @@ description: Manual menu simple
 ---
 [
     Link {
+        src: "one.md",
+        children: [],
         path: "/one",
         title: "One",
-        children: [],
-        index: 4294967295,
     },
     Link {
-        path: "/child/",
-        title: "Nested Root",
+        src: "child",
         children: [
             Link {
+                src: "child/three.md",
+                children: [],
                 path: "/child/three",
                 title: "Three",
-                children: [],
-                index: 4294967295,
             },
         ],
-        index: 4294967295,
+        path: "/child/",
+        title: "Nested Root",
     },
 ]

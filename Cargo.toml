@@ -1,6 +1,6 @@
 [package]
 name = "docgen"
-version = "0.3.2"
+version = "0.3.3"
 authors = [
     "Abdullah Atta <abdullahatta@streetwriters.co>",
     "Niklas Begley <nik@doctave.com>",
